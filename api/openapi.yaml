@@ -1,0 +1,1417 @@
+openapi: 3.1.0
+info:
+  title: Mythborn API
+  version: 0.1.0
+  description: >-
+    Contract for the current route handlers under /api/v1. These handler
+    shapes have been checked against their Go registrations. The API binary
+    still needs to wire dependencies and the handler registrar before these
+    routes are reachable at runtime. Remaining admin game-management actions
+    from the product architecture are not implemented and are intentionally
+    omitted. Responses use the direct JSON objects shown here; there is no
+    universal data envelope.
+servers:
+  - url: /api/v1
+    description: Same-origin API prefix; configure the frontend API origin separately.
+tags:
+  - name: Worlds
+    description: Create, read, configure, end, and delete a player's worlds.
+  - name: Observations
+    description: Submit photos and inspect discovery processing.
+  - name: Lore
+    description: Read persistent agents, beliefs, traditions, and chronicles.
+  - name: Messenger
+    description: Exchange messages with one agent in a completed discovery.
+  - name: Account
+    description: Account lifecycle operations.
+  - name: Admin
+    description: Account-level administration; every operation requires Admin permission.
+paths:
+  /worlds:
+    get:
+      operationId: listWorlds
+      tags: [Worlds]
+      summary: List the authenticated account's worlds
+      description: The current list implementation returns worlds owned by the authenticated account.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Worlds owned by the authenticated account.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [worlds]
+                properties:
+                  worlds:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Game'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          $ref: '#/components/responses/AuthenticationUnavailable'
+    post:
+      operationId: createWorld
+      tags: [Worlds]
+      summary: Create a world with an immutable player role
+      description: >-
+        Requires an idempotency key of 8 to 180 characters in the
+        Idempotency-Key header or idempotency_key query parameter (header wins).
+        A repeated key for the same account and command reuses the existing world and command.
+        The response is accepted while the worker starts the world.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IdempotencyKeyQuery'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWorldRequest'
+      responses:
+        '202':
+          description: World creation was accepted.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [world, command_id]
+                properties:
+                  world:
+                    $ref: '#/components/schemas/Game'
+                  command_id:
+                    $ref: '#/components/schemas/UUID'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/InvalidRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/AuthenticationUnavailable'
+  /worlds/{id}:
+    parameters:
+      - $ref: '#/components/parameters/WorldId'
+    get:
+      operationId: getWorld
+      tags: [Worlds]
+      summary: Get one world
+      description: Owners and account-level admins may read a world.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The requested world.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [world]
+                properties:
+                  world:
+                    $ref: '#/components/schemas/Game'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/AuthenticationUnavailable'
+    delete:
+      operationId: requestWorldDeletion
+      tags: [Worlds]
+      summary: Request deletion of a world
+      description: >-
+        Returns an asynchronous command ID. The current handler does not require
+        an Idempotency-Key; deletion is represented by a deterministic server
+        operation. Owners and account-level admins may request deletion.
+      security:
+        - bearerAuth: []
+      responses:
+        '202':
+          description: Deletion was accepted for asynchronous cleanup.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [command_id]
+                properties:
+                  command_id:
+                    $ref: '#/components/schemas/UUID'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/AuthenticationUnavailable'
+  /worlds/{id}/settings:
+    parameters:
+      - $ref: '#/components/parameters/WorldId'
+    patch:
+      operationId: updateWorldSettings
+      tags: [Worlds]
+      summary: Update whether photo descriptions require player review
+      description: >-
+        The world must be starting or active. Owners and account-level admins
+        may update this setting.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateWorldSettingsRequest'
+      responses:
+        '200':
+          description: The updated setting.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [review_photo_description]
+                properties:
+                  review_photo_description:
+                    type: boolean
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/InvalidRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/AuthenticationUnavailable'
+  /worlds/{id}/end:
+    parameters:
+      - $ref: '#/components/parameters/WorldId'
+    post:
+      operationId: requestWorldEnd
+      tags: [Worlds]
+      summary: Request world closure and archival
+      description: >-
+        Requires an idempotency key of 8 to 180 characters in the
+        Idempotency-Key header or idempotency_key query parameter (header wins).
+        The world must be active. A repeated key for the same account and
+        command reuses the existing command. Closure and the final chronicle
+        happen asynchronously.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IdempotencyKeyQuery'
+      responses:
+        '202':
+          description: Closure was accepted.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [command_id]
+                properties:
+                  command_id:
+                    $ref: '#/components/schemas/UUID'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/InvalidRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/AuthenticationUnavailable'
+  /worlds/{id}/observations:
+    parameters:
+      - $ref: '#/components/parameters/WorldId'
+    post:
+      operationId: submitObservation
+      tags: [Observations]
+      summary: Submit a photo to a world
+      description: >-
+        Requires an active world. The player role is checked server-side:
+        Observer submissions cannot include player_statement. God and Messenger
+        statements are limited to 2,000 bytes. JPEG, PNG, and WebP are accepted;
+        the photo part is limited to 10 MiB and the full multipart request to
+        approximately 11 MiB. If the same source image was previously submitted
+        in this world, the handler returns 409 unless allow_reuse is the literal
+        string "true". Reusing an idempotency key returns the original operation.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IdempotencyKeyQuery'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SubmitObservationRequest'
+            encoding:
+              photo:
+                contentType: image/jpeg, image/png, image/webp
+      responses:
+        '202':
+          description: Observation and discovery episode were accepted for processing.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [observation_id, episode_id, command_id]
+                properties:
+                  observation_id:
+                    $ref: '#/components/schemas/UUID'
+                  episode_id:
+                    $ref: '#/components/schemas/UUID'
+                  command_id:
+                    $ref: '#/components/schemas/UUID'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: The world is not eligible or an exact image duplicate was found.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/HandlerError'
+                  - $ref: '#/components/schemas/DuplicateObservationError'
+              examples:
+                stateConflict:
+                  value: {error: conflict, code: conflict}
+                duplicateImage:
+                  value: {error: duplicate_observation, code: duplicate_observation, episode_id: 00000000-0000-4000-8000-000000000001}
+        '422':
+          $ref: '#/components/responses/InvalidRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/AuthenticationUnavailable'
+  /episodes/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Episode (round) UUID.
+        schema:
+          $ref: '#/components/schemas/UUID'
+    get:
+      operationId: getEpisode
+      tags: [Observations]
+      summary: Get episode progress and saved result
+      description: Owner/admin access. The response contains persisted progress and, when available, the chronicle; it does not contain raw reactions or rebuttals.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Episode, optional observation evidence, and optional chronicle.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EpisodeDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/AuthenticationUnavailable'
+  /episodes/{id}/description-decision:
+    parameters:
+      - $ref: '#/components/parameters/EpisodeId'
+    post:
+      operationId: submitDescriptionDecision
+      tags: [Observations]
+      summary: Accept, correct, or resolve an uncertain description
+      description: >-
+        Requires the episode to be awaiting review or a clarity choice. Valid
+        decisions are accept, correct, and choose_clarity. choose_clarity must
+        include clarity_choice=continue_uncertain or try_another_photo. A
+        correction must be nonempty. The operation is asynchronous and uses an
+        idempotency key; the handler accepts it through Idempotency-Key or the
+        idempotency_key query parameter (header takes precedence).
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IdempotencyKeyQuery'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DescriptionDecisionRequest'
+      responses:
+        '202':
+          $ref: '#/components/responses/AcceptedCommand'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/InvalidRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/AuthenticationUnavailable'
+  /episodes/{id}/retry:
+    parameters:
+      - $ref: '#/components/parameters/EpisodeId'
+    post:
+      operationId: retryEpisode
+      tags: [Observations]
+      summary: Retry a failed episode
+      description: >-
+        Available only for failed or needs_attention episodes in an active world.
+        Reuses the episode and retries from its safe checkpoint. Requires an
+        idempotency key through Idempotency-Key or idempotency_key query; header
+        takes precedence.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IdempotencyKeyQuery'
+      responses:
+        '202':
+          $ref: '#/components/responses/AcceptedCommand'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/InvalidRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/AuthenticationUnavailable'
+  /observations/{id}/photo-url:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Observation UUID.
+        schema:
+          $ref: '#/components/schemas/UUID'
+    get:
+      operationId: getObservationPhotoUrl
+      tags: [Observations]
+      summary: Get a short-lived signed photo URL
+      description: Owner/admin access. The signed URL is valid for ten minutes.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Signed URL for the private photo.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url]
+                properties:
+                  url:
+                    type: string
+                    format: uri
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          description: Authentication is unavailable or photo storage is not configured.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: authentication unavailable
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HandlerError'
+              example: {error: photo_storage_unavailable, code: photo_storage_unavailable}
+  /worlds/{id}/agents:
+    parameters:
+      - $ref: '#/components/parameters/WorldId'
+    get:
+      operationId: listWorldAgents
+      tags: [Lore]
+      summary: List the four agents in a world
+      description: Owner/admin access. Current response includes each agent's personality_prompt field.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Agents in this world.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [agents]
+                properties:
+                  agents:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Agent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/AuthenticationUnavailable'
+  /worlds/{id}/agents/{agent}/beliefs:
+    parameters:
+      - $ref: '#/components/parameters/WorldId'
+      - $ref: '#/components/parameters/AgentId'
+    get:
+      operationId: listAgentBeliefs
+      tags: [Lore]
+      summary: List current beliefs and belief revisions for an agent
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current belief ledger and append-only revision history.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [beliefs, revisions]
+                properties:
+                  beliefs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Belief'
+                  revisions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BeliefRevision'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/AuthenticationUnavailable'
+  /worlds/{id}/traditions:
+    parameters:
+      - $ref: '#/components/parameters/WorldId'
+    get:
+      operationId: listWorldTraditions
+      tags: [Lore]
+      summary: List shared traditions and their current supporters
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Traditions wrapped with their current supporter IDs.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [traditions]
+                properties:
+                  traditions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TraditionContext'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/AuthenticationUnavailable'
+  /worlds/{id}/history:
+    parameters:
+      - $ref: '#/components/parameters/WorldId'
+    get:
+      operationId: listWorldHistory
+      tags: [Lore]
+      summary: List saved chronicles in a world
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Chronicles, including discovery, council, and closing records.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [history]
+                properties:
+                  history:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Chronicle'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/AuthenticationUnavailable'
+  /episodes/{id}/agents/{agent}/messages:
+    parameters:
+      - $ref: '#/components/parameters/EpisodeId'
+      - $ref: '#/components/parameters/AgentId'
+    get:
+      operationId: getMessengerThread
+      tags: [Messenger]
+      summary: Get the saved conversation summary for one agent
+      description: >-
+        Available only in a Messenger world and for a completed discovery. No
+        transcript is stored. summary is null and summary_version is 0 before
+        the first exchange.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current summary object, or null before the first exchange.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [summary, summary_version]
+                properties:
+                  summary:
+                    oneOf:
+                      - $ref: '#/components/schemas/ConversationSummary'
+                      - type: 'null'
+                  summary_version:
+                    type: integer
+                    format: int64
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/AuthenticationUnavailable'
+    post:
+      operationId: sendMessengerMessage
+      tags: [Messenger]
+      summary: Send a message to one agent
+      description: >-
+        Available only in an active Messenger world, for a completed discovery
+        and an agent belonging to that world. Message size is 1 to 4,000 bytes.
+        expected_summary_version defaults to 0 if omitted and is checked against
+        the saved summary. A mismatch returns 409. Requires an idempotency key
+        through Idempotency-Key or idempotency_key query; header takes precedence.
+        The message is processed asynchronously; only a rolling summary is kept.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IdempotencyKeyQuery'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMessageRequest'
+      responses:
+        '202':
+          $ref: '#/components/responses/AcceptedCommand'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/InvalidRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/AuthenticationUnavailable'
+  /commands/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Outbox command UUID.
+        schema:
+          $ref: '#/components/schemas/UUID'
+    get:
+      operationId: getCommandStatus
+      tags: [Messenger]
+      summary: Get command status and any unexpired Messenger reply
+      description: >-
+        Owner/admin access. A Messenger reply is returned only while its
+        delivery buffer is available; the worker sets that buffer to expire
+        after 24 hours. After expiry, reply is omitted while command status and
+        the saved summary remain available. A command's raw input is not returned.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Command status, optional saved Messenger summary, and optional reply.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/AuthenticationUnavailable'
+  /account:
+    delete:
+      operationId: requestAccountDeletion
+      tags: [Account]
+      summary: Request deletion of the authenticated account
+      description: Starts asynchronous deletion of the account's worlds, stored photos, and Supabase Auth identity.
+      security:
+        - bearerAuth: []
+      responses:
+        '202':
+          description: Account deletion was accepted.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [deletion_job_id, command_id]
+                properties:
+                  deletion_job_id:
+                    $ref: '#/components/schemas/UUID'
+                  command_id:
+                    $ref: '#/components/schemas/UUID'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/AuthenticationUnavailable'
+  /admin/templates:
+    get:
+      operationId: listAdminTemplates
+      tags: [Admin]
+      summary: List versioned agent templates
+      description: Requires account-level Admin permission.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Templates and their initial beliefs.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [templates]
+                properties:
+                  templates:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AgentTemplate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/AuthenticationUnavailable'
+    post:
+      operationId: createAdminTemplate
+      tags: [Admin]
+      summary: Create a new version of an agent template
+      description: Requires account-level Admin permission. Version and ID are generated by the server; activating is_active=true deactivates the previous active template of the same agent type.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAgentTemplateRequest'
+      responses:
+        '201':
+          description: Template created.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [template]
+                properties:
+                  template:
+                    $ref: '#/components/schemas/AgentTemplate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/InvalidRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/AuthenticationUnavailable'
+  /admin/templates/{id}/activate:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Agent template UUID.
+        schema:
+          $ref: '#/components/schemas/UUID'
+    post:
+      operationId: activateAdminTemplate
+      tags: [Admin]
+      summary: Activate a template version
+      description: Requires account-level Admin permission. Activating a template deactivates the current active version for the same agent type.
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Template activated; no response body.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/AuthenticationUnavailable'
+  /admin/accounts:
+    get:
+      operationId: listAdminAccounts
+      tags: [Admin]
+      summary: List application accounts
+      description: Requires account-level Admin permission.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Accounts with current system role and status.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [accounts]
+                properties:
+                  accounts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AdminAccount'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/AuthenticationUnavailable'
+  /admin/accounts/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Supabase Auth account UUID.
+        schema:
+          $ref: '#/components/schemas/UUID'
+    patch:
+      operationId: setAdminAccountRole
+      tags: [Admin]
+      summary: Set an account's system role
+      description: Requires account-level Admin permission. This system permission is separate from each game's immutable player role.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetSystemRoleRequest'
+      responses:
+        '200':
+          description: Updated system role.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [system_role]
+                properties:
+                  system_role:
+                    $ref: '#/components/schemas/SystemRole'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/AuthenticationUnavailable'
+  /admin/games:
+    get:
+      operationId: listAdminGames
+      tags: [Admin]
+      summary: List all games for administration
+      description: Requires account-level Admin permission.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: All games.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [games]
+                properties:
+                  games:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Game'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/AuthenticationUnavailable'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Supabase Auth access token.
+  parameters:
+    WorldId:
+      name: id
+      in: path
+      required: true
+      description: World UUID.
+      schema:
+        $ref: '#/components/schemas/UUID'
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: >-
+        Preferred idempotency-key location. 8 to 180 characters. For routes
+        that require a key, use this header or the idempotency_key query
+        parameter; if both are sent, the header takes precedence.
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 180
+    IdempotencyKeyQuery:
+      name: idempotency_key
+      in: query
+      required: false
+      description: Fallback idempotency-key location; the header takes precedence.
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 180
+    EpisodeId:
+      name: id
+      in: path
+      required: true
+      description: Episode (round) UUID.
+      schema:
+        $ref: '#/components/schemas/UUID'
+    AgentId:
+      name: agent
+      in: path
+      required: true
+      description: Agent UUID belonging to the episode's world.
+      schema:
+        $ref: '#/components/schemas/UUID'
+  schemas:
+    UUID:
+      type: string
+      format: uuid
+    PlayerRole:
+      type: string
+      enum: [observer, god, messenger]
+    GameStatus:
+      type: string
+      enum: [starting, active, ending_requested, ending, archived, deleting]
+    RoundStatus:
+      type: string
+      enum: [queued, running, needs_attention, complete, failed, abandoned]
+    RoundStage:
+      type: string
+      enum: [queued, describing, awaiting_review, awaiting_clarity_choice, reacting, debating, writing, complete]
+    DescriptionStatus:
+      type: string
+      enum: [pending, awaiting_review, uncertain, accepted]
+    AgentType:
+      type: string
+      enum: [priest, scientist, soldier, historian]
+    SystemRole:
+      type: string
+      enum: [user, admin]
+    BeliefState:
+      type: string
+      enum: [forming, held, questioned, abandoned]
+    TraditionType:
+      type: string
+      enum: [myth, ritual, taboo]
+    TraditionState:
+      type: string
+      enum: [adopted, contested, retired]
+    ChronicleOutcome:
+      type: string
+      enum: [consensus, majority, unresolved]
+    CommandStatus:
+      type: string
+      enum: [pending, dispatched, processed, failed]
+    CreateWorldRequest:
+      type: object
+      required: [name, player_role]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        player_role:
+          $ref: '#/components/schemas/PlayerRole'
+    UpdateWorldSettingsRequest:
+      type: object
+      required: [review_photo_description]
+      properties:
+        review_photo_description:
+          type: boolean
+    SubmitObservationRequest:
+      type: object
+      required: [photo]
+      properties:
+        photo:
+          type: string
+          format: binary
+          description: JPEG, PNG, or WebP file, at most 10 MiB.
+        player_statement:
+          type: string
+          maxLength: 2000
+          description: Optional God proclamation or Messenger testimony; prohibited for Observer games.
+        allow_reuse:
+          type: string
+          enum: ['true', 'false']
+          default: 'false'
+          description: Multipart text field; only the literal true enables duplicate-image reuse.
+    DescriptionDecisionRequest:
+      type: object
+      required: [decision]
+      properties:
+        decision:
+          type: string
+          enum: [accept, correct, choose_clarity]
+        player_correction:
+          type: string
+          description: Required and nonempty when decision is correct.
+        clarity_choice:
+          type: string
+          enum: [continue_uncertain, try_another_photo]
+          description: Required when decision is choose_clarity.
+    SendMessageRequest:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 4000
+        expected_summary_version:
+          type: integer
+          format: int64
+          minimum: 0
+          default: 0
+    SetSystemRoleRequest:
+      type: object
+      required: [system_role]
+      properties:
+        system_role:
+          $ref: '#/components/schemas/SystemRole'
+    CreateAgentTemplateRequest:
+      type: object
+      required: [agent_type, display_name, personality_prompt]
+      properties:
+        agent_type:
+          $ref: '#/components/schemas/AgentType'
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        personality_prompt:
+          type: string
+          minLength: 1
+          maxLength: 12000
+        is_active:
+          type: boolean
+          default: false
+        beliefs:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/InitialBeliefTemplateInput'
+    InitialBeliefTemplateInput:
+      type: object
+      required: [claim, initial_state]
+      properties:
+        claim:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        initial_state:
+          $ref: '#/components/schemas/BeliefState'
+        sort_order:
+          type: integer
+          description: Accepted by the decoder but creation order in the beliefs array determines the stored sort order.
+    Game:
+      type: object
+      required:
+        - id
+        - owner_account_id
+        - name
+        - player_role
+        - status
+        - review_photo_description
+        - created_at
+        - updated_at
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        owner_account_id:
+          $ref: '#/components/schemas/UUID'
+        name:
+          type: string
+        player_role:
+          $ref: '#/components/schemas/PlayerRole'
+        status:
+          $ref: '#/components/schemas/GameStatus'
+        review_photo_description:
+          type: boolean
+        last_council_at:
+          type: [string, 'null']
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        archived_at:
+          type: [string, 'null']
+          format: date-time
+    Round:
+      type: object
+      required: [id, game_id, sequence_number, kind, status, stage, created_at, updated_at]
+      properties:
+        id: {$ref: '#/components/schemas/UUID'}
+        game_id: {$ref: '#/components/schemas/UUID'}
+        sequence_number: {type: integer, format: int64}
+        kind: {type: string, enum: [discovery, council, closing]}
+        observation_id: {$ref: '#/components/schemas/UUID'}
+        status: {$ref: '#/components/schemas/RoundStatus'}
+        stage: {$ref: '#/components/schemas/RoundStage'}
+        error_code: {type: string}
+        started_at: {type: string, format: date-time}
+        completed_at: {type: string, format: date-time}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+    EpisodeObservation:
+      type: object
+      required: [id, description, player_correction, description_status]
+      properties:
+        id: {$ref: '#/components/schemas/UUID'}
+        description: {type: string}
+        player_correction: {type: string}
+        description_status: {$ref: '#/components/schemas/DescriptionStatus'}
+    EpisodeDetail:
+      type: object
+      required: [episode]
+      properties:
+        episode: {$ref: '#/components/schemas/Round'}
+        observation: {$ref: '#/components/schemas/EpisodeObservation'}
+        chronicle: {$ref: '#/components/schemas/Chronicle'}
+    Agent:
+      type: object
+      required: [id, game_id, agent_type, display_name, personality_prompt, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/UUID'}
+        game_id: {$ref: '#/components/schemas/UUID'}
+        agent_type: {$ref: '#/components/schemas/AgentType'}
+        display_name: {type: string}
+        personality_prompt: {type: string}
+        source_template_id: {$ref: '#/components/schemas/UUID'}
+        created_at: {type: string, format: date-time}
+    Belief:
+      type: object
+      required: [id, game_id, agent_id, claim, state, version, created_at, updated_at]
+      properties:
+        id: {$ref: '#/components/schemas/UUID'}
+        game_id: {$ref: '#/components/schemas/UUID'}
+        agent_id: {$ref: '#/components/schemas/UUID'}
+        claim: {type: string}
+        state: {$ref: '#/components/schemas/BeliefState'}
+        version: {type: integer, format: int64}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+    BeliefRevision:
+      type: object
+      required: [id, game_id, belief_id, version, event_id, cause, change_type, new_claim, new_state, reason, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/UUID'}
+        game_id: {$ref: '#/components/schemas/UUID'}
+        belief_id: {$ref: '#/components/schemas/UUID'}
+        version: {type: integer, format: int64}
+        event_id: {$ref: '#/components/schemas/UUID'}
+        cause: {type: string, enum: [initial, discovery, council, messenger]}
+        change_type: {type: string, enum: [formed, strengthened, weakened, revised, abandoned]}
+        previous_claim: {type: string}
+        previous_state: {$ref: '#/components/schemas/BeliefState'}
+        new_claim: {type: string}
+        new_state: {$ref: '#/components/schemas/BeliefState'}
+        reason: {type: string}
+        source_round_id: {$ref: '#/components/schemas/UUID'}
+        source_conversation_summary_id: {$ref: '#/components/schemas/UUID'}
+        created_at: {type: string, format: date-time}
+    Tradition:
+      type: object
+      required: [id, game_id, type, title, description, state, version, created_at, updated_at]
+      properties:
+        id: {$ref: '#/components/schemas/UUID'}
+        game_id: {$ref: '#/components/schemas/UUID'}
+        type: {$ref: '#/components/schemas/TraditionType'}
+        title: {type: string}
+        description: {type: string}
+        state: {$ref: '#/components/schemas/TraditionState'}
+        version: {type: integer, format: int64}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+    TraditionContext:
+      type: object
+      required: [tradition, supporter_ids]
+      properties:
+        tradition: {$ref: '#/components/schemas/Tradition'}
+        supporter_ids:
+          type: array
+          items: {$ref: '#/components/schemas/UUID'}
+    Chronicle:
+      type: object
+      required: [id, game_id, round_id, historian_agent_id, title, verdict, body, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/UUID'}
+        game_id: {$ref: '#/components/schemas/UUID'}
+        round_id: {$ref: '#/components/schemas/UUID'}
+        historian_agent_id: {$ref: '#/components/schemas/UUID'}
+        title: {type: string}
+        outcome: {$ref: '#/components/schemas/ChronicleOutcome'}
+        verdict: {type: string}
+        body: {type: string}
+        suggestion: {type: string}
+        metadata:
+          type: object
+          additionalProperties: true
+        created_at: {type: string, format: date-time}
+    ConversationSummary:
+      type: object
+      required: [id, game_id, round_id, agent_id, summary, version, last_event_id, created_at, updated_at]
+      properties:
+        id: {$ref: '#/components/schemas/UUID'}
+        game_id: {$ref: '#/components/schemas/UUID'}
+        round_id: {$ref: '#/components/schemas/UUID'}
+        agent_id: {$ref: '#/components/schemas/UUID'}
+        summary: {type: string}
+        version: {type: integer, format: int64}
+        last_event_id: {$ref: '#/components/schemas/UUID'}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+    CommandResult:
+      type: object
+      required: [command]
+      properties:
+        command:
+          type: object
+          required: [id, status]
+          properties:
+            id: {$ref: '#/components/schemas/UUID'}
+            status: {$ref: '#/components/schemas/CommandStatus'}
+        summary:
+          $ref: '#/components/schemas/ConversationSummary'
+        reply:
+          description: Raw JSON reply payload; omitted after its 24-hour delivery expiry.
+    AgentTemplate:
+      type: object
+      required: [id, agent_type, version, display_name, personality_prompt, is_active, beliefs]
+      properties:
+        id: {$ref: '#/components/schemas/UUID'}
+        agent_type: {$ref: '#/components/schemas/AgentType'}
+        version: {type: integer}
+        display_name: {type: string}
+        personality_prompt: {type: string}
+        is_active: {type: boolean}
+        beliefs:
+          type: [array, 'null']
+          items:
+            $ref: '#/components/schemas/InitialBeliefTemplate'
+    InitialBeliefTemplate:
+      type: object
+      required: [id, claim, initial_state, sort_order]
+      properties:
+        id: {$ref: '#/components/schemas/UUID'}
+        claim: {type: string}
+        initial_state: {$ref: '#/components/schemas/BeliefState'}
+        sort_order: {type: integer}
+    AdminAccount:
+      type: object
+      required: [id, system_role, status, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/UUID'}
+        system_role: {$ref: '#/components/schemas/SystemRole'}
+        status: {type: string, enum: [active, deleting]}
+        created_at: {type: string}
+    DuplicateObservationError:
+      type: object
+      required: [error, code, episode_id]
+      properties:
+        error: {type: string, const: duplicate_observation}
+        code: {type: string, const: duplicate_observation}
+        episode_id: {$ref: '#/components/schemas/UUID'}
+    HandlerError:
+      type: object
+      required: [error, code]
+      properties:
+        error:
+          type: string
+          description: Stable error code emitted by current handlers.
+        code:
+          type: string
+          description: Duplicate of error for compatibility with the current client.
+  responses:
+    AcceptedCommand:
+      description: Command accepted for asynchronous processing.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [command_id]
+            properties:
+              command_id:
+                $ref: '#/components/schemas/UUID'
+    Unauthorized:
+      description: Missing or invalid bearer token. Current middleware responds as plain text.
+      content:
+        text/plain:
+          schema:
+            type: string
+            example: unauthorized
+    AuthenticationUnavailable:
+      description: Authentication service is unavailable. Current middleware responds as plain text.
+      content:
+        text/plain:
+          schema:
+            type: string
+            example: authentication unavailable
+    Forbidden:
+      description: Authenticated account lacks permission for this world.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/HandlerError'
+          example:
+            error: forbidden
+            code: forbidden
+    NotFound:
+      description: Referenced resource does not exist or is not accessible.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/HandlerError'
+          example:
+            error: not_found
+            code: not_found
+    Conflict:
+      description: Resource state or summary version conflicts with the requested operation.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/HandlerError'
+          example:
+            error: conflict
+            code: conflict
+    InvalidRequest:
+      description: Request body, field, or idempotency key is invalid.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/HandlerError'
+          example:
+            error: invalid_request
+            code: invalid_request
+    InternalError:
+      description: Unexpected internal failure.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/HandlerError'
+          example:
+            error: internal_error
+            code: internal_error

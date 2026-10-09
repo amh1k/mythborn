@@ -1,0 +1,86 @@
+# Mythborn: Implementation Plan
+
+This plan translates the product and technical specifications into implementation work. The working tree now contains the React app, Go API and Temporal worker, initial schema migration, CRUD handlers, and integrations; the phases below remain the verification and deployment roadmap. The authoritative behavior remains in [FUNCTIONAL_SPEC.md](./FUNCTIONAL_SPEC.md), the schema in [DATABASE_DESIGN.md](./DATABASE_DESIGN.md), service boundaries in [ARCHITECTURE.md](./ARCHITECTURE.md), and selected stack in [TECHNOLOGIES.md](./TECHNOLOGIES.md).
+
+## Work ownership
+
+Each implementation agent owns the listed paths. Ask the coordinator before changing a shared contract or editing another agent's owned paths. Keep changes in small, reviewable commits or patches and integrate through the dependency gates below.
+
+| Role | Exclusive ownership | Must not own |
+| --- | --- | --- |
+| **Coordinator** | This plan, `api/openapi.yaml` (the HTTP contract), cross-agent sequencing, contract review, integration decisions, and resolving spec conflicts with the project owner. | Runtime implementation files; do not silently revise product decisions. |
+| **UI style designer** | `web/src/styles/**`, `web/src/design-tokens.css`, and `web/STYLE_GUIDE.md`. Define typography, color, spacing, responsive rules, and component-state styling examples. | React components, routes, app behavior, API clients, or backend files. Deliver tokens and usage guidance for the frontend agent. |
+| **React frontend** | `web/index.html`, `web/package.json`, `web/tsconfig*.json`, `web/vite.config.ts`, and `web/src/**` except `web/src/styles/**` and `web/src/design-tokens.css`. Own React components, routes, Supabase browser auth, API client/types, TanStack Query polling, and UI behavior. Consume the style designer's tokens. |
+| **Go backend foundation** | Root `go.mod`/`go.sum`; `cmd/api/**`; `internal/api/**`; `internal/config/**`, `internal/auth/**`, `internal/domain/**`, `internal/contracts/**`, and `internal/storage/**`; root `.env.example` and `.gitignore`. Own service bootstrap, verified Supabase JWT identity, database pool wiring, shared domain/database interfaces, photo validation/storage adapter, CORS, health checks, and route registration seam. |
+| **CRUD implementation** | `internal/httpapi/handlers/**`; `internal/app/**`; `internal/repository/**`; `migrations/**`. Own schema migrations, SQL constraints/indexes, repository queries, transaction boundaries, CRUD/domain use cases, endpoint handlers, and outbox command writes. Register handlers through `internal/api/router.go`; coordinate any needed change to that foundation-owned file. |
+| **Temporal Go worker** | `cmd/worker/**`; `internal/workflow/**`; `internal/workflows/**`; `internal/activities/**`; `internal/models/**`; `internal/retrieval/**`. Own Temporal worker startup, workflow payloads, definitions, activity implementations, model/retrieval adapters, scheduled councils, outbox dispatch, and durable workflow behavior. Reuse foundation database interfaces and CRUD repository interfaces; do not edit those shared owners' files. |
+
+All Go code uses one module and `internal/` packages. Establish repository interfaces and DTOs before dependent implementations. Any generated API clients or types must be generated from the agreed contract, not independently invented by frontend and backend agents.
+
+## Shared contracts
+
+These contracts are shared across agents and should be settled before parallel endpoint/workflow implementation.
+
+1. **Identity and authorization:** Supabase Auth user UUID is `accounts.id`. The server verifies JWT signature, issuer, audience, and expiry. `accounts.system_role` is `user|admin`; each `games.player_role` is immutable `observer|god|messenger`. Admin is application-wide access and never changes the gameplay role. Every game query is owner-scoped; admin bypass is explicit and server-side.
+2. **Database authority:** Tiger Cloud PostgreSQL is the sole application-data source. Follow all 17 tables and constraints in `DATABASE_DESIGN.md`. Goose migrations in `migrations/` are the schema authority. Photos live in a private Supabase Storage bucket; SQL stores only object paths and metadata. UUIDs are used throughout.
+3. **API namespace and behavior:** `/api/v1`; endpoint list, status/error behavior, ownership, and idempotency follow `ARCHITECTURE.md` section 7. Browser authentication is Supabase-only; browser never receives database, Temporal, model, or service-role credentials. Active episodes are read by polling `GET /api/v1/episodes/{id}`.
+4. **Workflow dispatch:** The API commits a command and `workflow_outbox` row in the same SQL transaction. The worker dispatcher claims and sends outbox events to Temporal, then marks delivery. The API does not call Temporal. Stable event/workflow IDs make duplicate delivery safe. Workflow activities do external I/O; workflow code remains deterministic.
+5. **Discovery payload:** A round contains one shared accepted photo description, separately attributed player statement/correction, four initial responses, one rebuttal per agent, proposed belief changes, and tradition support declarations. Reactions and rebuttals are temporary workflow data only. The historian decides `consensus|majority|unresolved`; unresolved completes normally. Deterministic code applies the separate 3-of-4 tradition rule. Chronicle, current belief/tradition changes and revisions, suggestion, and processed marker commit atomically.
+6. **Persistent state:** Initial agent templates are versioned admin-managed data copied at game creation. Beliefs and traditions have current state plus append-only revisions. Messenger stores one rolling summary per discovery/agent thread, not chat transcripts; temporary replies use the expiring outbox result buffer. Councils and closure are chronicle rows with `rounds.kind` set accordingly.
+7. **Frontend types:** Frontend models match API JSON, not database rows. `api/openapi.yaml` is the source of truth for implemented HTTP paths, JSON envelopes, status codes, and error shapes; coordinator owns it. The frontend consumes it through its API client and types in `web/src/lib/api.ts` and `web/src/types.ts`. Keep Temporal payload types in `internal/workflow/**` separate from HTTP JSON. Never expose persistence-only fields or photo object paths.
+
+## Phases and dependency gates
+
+### Phase 0 — Contract freeze and scaffold
+
+Coordinator confirms endpoint envelopes, enum spellings, auth claims, and the workflow event/payload shapes. Backend foundation creates the Go module/package skeleton, shared contracts, config examples, router seam, database/storage interfaces, and service startup shells. Frontend initializes Vite/React/TypeScript and establishes API/auth integration seams. Style designer delivers design tokens and state guidance without touching components.
+
+**Gate:** `api/openapi.yaml` defines the exact implemented world routes and CRUD-confirmed request/response/status/idempotency behavior. Architecture-listed endpoints without handlers remain planned and are added only when CRUD confirms their shapes; do not invent admin mutation operations. Frontend's API client/types align with the current OpenAPI paths and envelopes. Foundation and CRUD agree on auth failures versus handler errors. UI designer supplies token names and responsive/component-state guidance. Coordinator reviews one successful request and one error response across OpenAPI, Go, and TypeScript.
+
+### Phase 1 — Database and service foundations
+
+CRUD agent writes Goose migrations in dependency order for accounts/games/templates/agents, observations/rounds/chronicles, beliefs/traditions/conversation summaries, then search/outbox/deletion operations. Backend foundation wires config, auth verification, database pool, upload validation, and server middleware. Temporal agent builds worker startup and the durable coordinator/agent workflow skeleton against the shared payloads. Frontend builds auth shell, world list/create, and route/layout skeleton using the approved style tokens.
+
+**Gate:** every migration applies from an empty database and down/up behavior is documented where rollback is unsafe; database constraints cover the invariants in `DATABASE_DESIGN.md` (fixed role, one open round, unique chronicle, same-game FKs, stable idempotency/revision IDs). API and worker both connect through the agreed `pgxpool` setup; health/readiness distinguishes database unavailable from process alive. `go test ./...` and frontend typecheck/build pass. No credentials are checked in.
+
+**Local schema setup:** the service does not run migrations at startup. Install the Goose CLI and apply migrations explicitly with `goose -dir migrations postgres "$DATABASE_URL" up` from the repository root. The `goose` executable must be available on `PATH`; provision the first admin account and active agent templates before testing world creation.
+
+### Phase 2 — First complete vertical slice
+
+CRUD implements world creation (copy active templates and beliefs transactionally), private photo upload metadata, outbox submission, episode/history reads, and atomic chronicle commit. Temporal implements image description, four reactions, rebuttal phase, historian verdict, and commit activities with idempotent stable IDs. Frontend implements Observer creation, photo upload/capture, active-stage polling, uncertainty/review decisions, and chronicle display. Style designer adjusts tokens/examples only based on agreed feedback.
+
+**Gate:** using a local Supabase-compatible test project/bucket, Tiger-compatible PostgreSQL, and Temporal dev server, one Observer photo completes from upload through persisted chronicle. Verify the browser sees stage changes by polling `GET /api/v1/episodes/{id}`, reload reconnects to the same round, and repeated idempotency key returns the same operation. Force failure before final commit and confirm no chronicle, belief/tradition revisions, current-state updates, or processed marker commit partially. Verify a retry commits exactly one chronicle and one set of revisions.
+
+### Phase 3 — Persistent society and role-specific flows
+
+Add current belief/tradition views and revisions, game-scoped memory retrieval, second-observation recall, God proclamation, Messenger testimony/conversation-summary/reply flow, and role-aware UI. Keep the historian's interpretation and tradition vote logic separate. Add admin portal operations for template versions, accounts, and games.
+
+**Gate:** change/activate a template after creating a game and confirm only the next game receives it. Exercise owner, other-user, and admin access for each new route; test Observer/God/Messenger role restrictions server-side. Complete a Messenger exchange, confirm the recipient reply is available only in the expiring outbox buffer, summary version advances once on retry, and no message transcript row exists. Confirm discovery and council revision sources remain linked to their correct round kinds.
+
+### Phase 4 — Lifecycle, reliability, and release readiness
+
+Add scheduled councils, end/archive with one closing chronicle, idempotent asynchronous deletion across Tiger/Supabase/Temporal, outbox reconciliation, cleanup/retention, Render deployment configuration, and operational monitoring. Rehearse retries and worker restart during active work.
+
+**Gate:** hold an open discovery and show the scheduled council defers; end an active game and confirm exactly one closing chronicle and an atomic archive transition; verify archived writes are rejected. Interrupt the worker after outbox dispatch and during an activity, restart it, and confirm one final record and no duplicate lore. Run game and account deletion through a simulated external-storage/workflow failure, then retry and confirm cleanup resumes from its recorded stage. Verify browser bundles contain only public Supabase config/API origin and the API has no Temporal or model credentials.
+
+## Integration rules
+
+- CRUD owns SQL schema and repository behavior; the worker may propose migration requirements but must route them through CRUD and coordinator review.
+- Foundation owns auth and service wiring; CRUD owns endpoint business behavior and data access. Handlers receive authenticated account/admin context from foundation middleware and call `internal/app` use cases.
+- Worker activities call application/repository interfaces for reads and commits. Avoid direct ad hoc SQL in workflows or handlers.
+- API submits commands through the outbox; worker claims and dispatches them to Temporal. Do not add direct API-to-Temporal signaling unless the architecture is deliberately revised first.
+- UI style designer shares tokens with frontend; only the frontend agent edits components and visual layout. If a style change requires component markup, frontend makes it.
+- Shared contract changes are proposed in one change, reviewed by coordinator, then propagated. Avoid duplicate handwritten enum definitions; use generated/shared contract types where practical.
+- If simultaneous edits are needed, split files by endpoint/package or serialize the merge. Do not resolve ownership conflicts by overwriting another agent's work.
+
+## Conflicts and external blockers
+
+- **Current implementation status:** The React app and current API client are under `web/`; its traditions normalizer and Messenger types now consume the CRUD-confirmed nested records and summary objects. The Go API entrypoint is wired to the pgx database, Supabase JWKS authenticator, private Supabase photo storage, CORS, and `handlers.Registrar{}` (`cmd/api/main.go`). The verifier requires Supabase asymmetric signing keys exposed at `SUPABASE_URL/auth/v1/.well-known/jwks.json`; Supabase projects configured for legacy HS256-only signing are unsupported. CRUD handlers/use cases/repositories and the initial migration are present under `internal/httpapi/handlers/`, `internal/app/`, `internal/repository/`, and `migrations/`; 25 registered operations across 21 paths are documented in `api/openapi.yaml`. Admin game mutation routes remain intentionally unspecified. The API does not apply migrations at startup; see the Goose command above.
+- **Temporal and repository progress:** `cmd/worker` now connects PostgreSQL, private Supabase Storage, Gemini, and Temporal; registers coordinator/agent/account-deletion workflows and activities; and starts leased outbox dispatch with graceful shutdown. The coordinator handles game activation, discoveries, Messenger, councils, closure, and deletion. Repository commits atomically update chronicles, beliefs/traditions, command markers, and scoped search documents; `SearchRelevantMemories` supports keyword and vector retrieval. Account/game deletion and closing-round lifecycle methods are present. A full `go build ./...` passes, but no end-to-end run against provisioned PostgreSQL, Supabase, Temporal, and Gemini services has been performed.
+- **Bootstrap and upload gaps:** The migration creates template tables but does not seed active templates or establish an initial admin. A first admin must be provisioned out of band, then create/activate all four agent templates before world creation succeeds. Observation upload currently checks file size and magic bytes but does not decode/normalize the image, enforce pixel dimensions, or strip EXIF metadata as required by the architecture; complete this before treating photo ingestion as production-ready.
+- **Known API and frontend status:** CRUD handler errors currently use `{error,code}` without a message or request ID, so architecture-level request-ID/error-message behavior remains unresolved. OpenAPI documents the current handler subset and should change only when CRUD confirms changed behavior. The frontend now has functional admin template/belief versioning, activation, account-role management, Messenger summary handling, and tradition normalization. `npm run build` and `go build ./...` both pass; no automated tests or live integration checks were run. Vite emits a non-blocking main-bundle size warning.
+- **Provisioning needed for hosted integration:** Supabase project/Auth providers/private bucket, Tiger Cloud database with required extensions, Temporal Cloud namespace/credentials, Google Gemini API access/quota, and Render services/secrets are external setup. Local development also needs PostgreSQL 17 with compatible extensions and a Temporal dev server.
+- **Cost/availability:** hosted provider availability, quotas, and challenge credit are not represented in code and must be confirmed in their respective account dashboards before deployment. No live credentials should be committed.
+
+The current architecture, database, and technology documents agree on worker-owned outbox dispatch, fixed per-game roles plus separate Admin permission, temporary raw debate data, final chronicles, revisioned beliefs/traditions, and Messenger summaries. OpenAPI now covers the CRUD routes present in the handler registrar. Add any future route only after its handler behavior and JSON shape are confirmed; keep unimplemented admin game mutations out of the contract until designed and built.
+
