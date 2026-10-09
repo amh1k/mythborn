@@ -1,0 +1,18 @@
+# Local credentials and environment configuration
+.env
+.env.*
+!.env.example
+
+# Go build outputs
+/bin/
+*.test
+
+# Frontend dependencies and generated output
+/web/node_modules/
+/web/dist/
+/web/*.tsbuildinfo
+
+# Editor and operating-system files
+.DS_Store
+.idea/
+.vscode/
