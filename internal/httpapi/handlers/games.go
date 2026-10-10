@@ -107,7 +107,11 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 
 func writeError(w http.ResponseWriter, err error) {
 	status, code := http.StatusInternalServerError, "internal_error"
+	message := ""
 	switch {
+	case errors.Is(err, repository.ErrMissingTemplates):
+		status, code = http.StatusConflict, "agent_templates_not_configured"
+		message = "An administrator must create and activate templates for the priest, scientist, soldier, and historian before you can create a civilization."
 	case errors.Is(err, app.ErrInvalid):
 		status, code = http.StatusUnprocessableEntity, "invalid_request"
 	case errors.Is(err, app.ErrForbidden):
@@ -119,5 +123,9 @@ func writeError(w http.ResponseWriter, err error) {
 	case errors.Is(err, repository.ErrStateConflict), errors.Is(err, repository.ErrDuplicateObservation):
 		status, code = http.StatusConflict, "conflict"
 	}
-	writeJSON(w, status, map[string]string{"error": code, "code": code})
+	payload := map[string]string{"error": code, "code": code}
+	if message != "" {
+		payload["message"] = message
+	}
+	writeJSON(w, status, payload)
 }

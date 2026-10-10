@@ -30,7 +30,7 @@ func (g Games) Create(ctx context.Context, p auth.Principal, name string, role d
 	}
 	game, command, err := g.Store.CreateGame(ctx, p.AccountID, name, role, idempotencyKey)
 	if errors.Is(err, repository.ErrMissingTemplates) {
-		return domain.Game{}, "", fmt.Errorf("%w: starting agent templates are not configured", ErrConflict)
+		return domain.Game{}, "", fmt.Errorf("%w: %w", ErrConflict, err)
 	}
 	return game, command, err
 }
