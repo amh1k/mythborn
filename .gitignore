@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+tiger-cloud-*-credentials.txt
 
 # Go build outputs
 /bin/
