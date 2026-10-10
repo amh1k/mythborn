@@ -307,6 +307,7 @@ CREATE TABLE account_deletion_jobs (
 CREATE UNIQUE INDEX account_deletion_one_unfinished_idx ON account_deletion_jobs(external_account_id) WHERE status IN ('pending', 'running', 'failed');
 
 -- Product identity and cross-table invariants that ordinary CHECK/FK constraints cannot express.
+-- +goose StatementBegin
 CREATE FUNCTION mythborn_guard_game_role() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
     IF NEW.player_role IS DISTINCT FROM OLD.player_role THEN
@@ -314,9 +315,11 @@ BEGIN
     END IF;
     RETURN NEW;
 END $$;
+-- +goose StatementEnd
 CREATE TRIGGER games_player_role_immutable BEFORE UPDATE OF player_role ON games
 FOR EACH ROW EXECUTE FUNCTION mythborn_guard_game_role();
 
+-- +goose StatementBegin
 CREATE FUNCTION mythborn_validate_agent_template_type() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE template_type text;
 BEGIN
@@ -328,9 +331,11 @@ BEGIN
     END IF;
     RETURN NEW;
 END $$;
+-- +goose StatementEnd
 CREATE TRIGGER agents_source_template_type BEFORE INSERT OR UPDATE OF source_template_id, agent_type ON agents
 FOR EACH ROW EXECUTE FUNCTION mythborn_validate_agent_template_type();
 
+-- +goose StatementBegin
 CREATE FUNCTION mythborn_validate_observation_role() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE role_name text;
 BEGIN
@@ -340,9 +345,11 @@ BEGIN
     END IF;
     RETURN NEW;
 END $$;
+-- +goose StatementEnd
 CREATE TRIGGER observations_player_role BEFORE INSERT OR UPDATE OF game_id, player_statement ON observations
 FOR EACH ROW EXECUTE FUNCTION mythborn_validate_observation_role();
 
+-- +goose StatementBegin
 CREATE FUNCTION mythborn_validate_chronicle() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE round_kind text; round_status text; author_type text;
 BEGIN
@@ -362,9 +369,11 @@ BEGIN
     END IF;
     RETURN NEW;
 END $$;
+-- +goose StatementEnd
 CREATE CONSTRAINT TRIGGER chronicles_validate_round AFTER INSERT OR UPDATE ON chronicles
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION mythborn_validate_chronicle();
 
+-- +goose StatementBegin
 CREATE FUNCTION mythborn_validate_round_chronicle() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
     IF NEW.status = 'complete' AND NOT EXISTS (SELECT 1 FROM chronicles WHERE game_id = NEW.game_id AND round_id = NEW.id) THEN
@@ -372,9 +381,11 @@ BEGIN
     END IF;
     RETURN NEW;
 END $$;
+-- +goose StatementEnd
 CREATE CONSTRAINT TRIGGER rounds_require_chronicle AFTER INSERT OR UPDATE ON rounds
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION mythborn_validate_round_chronicle();
 
+-- +goose StatementBegin
 CREATE FUNCTION mythborn_validate_round_source_kind() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE round_kind text;
 BEGIN
@@ -392,9 +403,11 @@ BEGIN
     END IF;
     RETURN NEW;
 END $$;
+-- +goose StatementEnd
 CREATE TRIGGER belief_revisions_validate_source BEFORE INSERT OR UPDATE ON belief_revisions
 FOR EACH ROW EXECUTE FUNCTION mythborn_validate_round_source_kind();
 
+-- +goose StatementBegin
 CREATE FUNCTION mythborn_validate_tradition_revision() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE round_kind text; agent_count integer;
 BEGIN
@@ -414,9 +427,11 @@ BEGIN
     END IF;
     RETURN NEW;
 END $$;
+-- +goose StatementEnd
 CREATE TRIGGER tradition_revisions_validate BEFORE INSERT OR UPDATE ON tradition_revisions
 FOR EACH ROW EXECUTE FUNCTION mythborn_validate_tradition_revision();
 
+-- +goose StatementBegin
 CREATE FUNCTION mythborn_validate_conversation_summary() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE game_role text; round_kind text; round_status text;
 BEGIN
@@ -427,9 +442,11 @@ BEGIN
     END IF;
     RETURN NEW;
 END $$;
+-- +goose StatementEnd
 CREATE CONSTRAINT TRIGGER conversation_summaries_validate AFTER INSERT OR UPDATE ON conversation_summaries
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION mythborn_validate_conversation_summary();
 
+-- +goose StatementBegin
 CREATE FUNCTION mythborn_validate_game_agent_set() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE gid uuid; agent_count integer;
 BEGIN
@@ -446,6 +463,7 @@ BEGIN
     END IF;
     RETURN NULL;
 END $$;
+-- +goose StatementEnd
 CREATE CONSTRAINT TRIGGER agents_exactly_four_after_change AFTER INSERT OR UPDATE OR DELETE ON agents
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION mythborn_validate_game_agent_set();
 CREATE CONSTRAINT TRIGGER games_require_four_agents AFTER INSERT ON games
