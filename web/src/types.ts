@@ -83,6 +83,9 @@ export interface Chronicle {
 }
 export interface EpisodeSummary {
   id: string
+  game_id: string
+  sequence_number: number
+  kind: 'discovery' | 'council' | 'closing'
   status: EpisodeStatus
   stage: EpisodeStage
   created_at?: string
@@ -97,6 +100,32 @@ export interface Episode extends EpisodeSummary {
   photo_url?: string
   chronicle?: Chronicle | null
   command_id?: string
+}
+export interface DebateAgent {
+  agent_id: string
+  agent_type: AgentType
+  display_name: string
+}
+export interface DebateEntry {
+  id: string
+  agent_id: string
+  phase: 'reaction' | 'rebuttal'
+  text: string
+  reasoning?: string
+}
+export interface DebatePreview {
+  game_id: string
+  round_id: string
+  attempt_id: string
+  phase: 'describing' | 'reaction' | 'rebuttal' | 'writing'
+  agents: DebateAgent[]
+  entries: DebateEntry[]
+  retries?: { agent_id?: string; phase: 'describing' | 'reaction' | 'rebuttal' | 'writing'; retry_at: string; attempt: number }[]
+}
+export interface DebateDetail {
+  state: 'waiting' | 'live' | 'unavailable' | 'finished'
+  player_role: PlayerRole
+  preview: DebatePreview | null
 }
 export interface HistoryItem extends Chronicle {
   round_kind?: 'discovery' | 'council' | 'closing'

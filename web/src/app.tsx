@@ -7,8 +7,11 @@ import { Sigil } from './components/sigil'
 import { BrandMark } from './components/brand-mark'
 import { ThemeToggle } from './theme'
 import { AtlasHero } from './components/atlas-hero'
+import { LiveDebate } from './components/live-debate'
+import { RoundProgress } from './components/round-progress'
+import { isFinished, isPaused, roundLabel, stageLabel } from './lib/episode-progress'
 import { worldArtwork } from './lib/world-art'
-import type { AdminAccount, Agent, AgentTemplate, Belief, ConversationSummary, Episode, Game, HistoryItem, InitialBeliefTemplate, PlayerRole, Tradition } from './types'
+import type { AdminAccount, Agent, AgentTemplate, Belief, ConversationSummary, Episode, EpisodeSummary, Game, HistoryItem, InitialBeliefTemplate, PlayerRole, Tradition } from './types'
 
 const roleNames: Record<PlayerRole, string> = { observer: 'Observer', god: 'God', messenger: 'Messenger' }
 const agentNames: Record<string, string> = { priest: 'The Priest', scientist: 'The Scientist', soldier: 'The Soldier', historian: 'The Historian' }
@@ -122,7 +125,7 @@ function CreateWorld() {
 }
 
 function WorldPage() {
-  const { worldId = '' } = useParams(); const token = useToken(); const [game, setGame] = useState<Game | null>(null); const [agents, setAgents] = useState<Agent[]>([]); const [history, setHistory] = useState<HistoryItem[]>([]); const [traditions, setTraditions] = useState<Tradition[]>([]); const [loading, setLoading] = useState(true); const [error, setError] = useState<unknown>(null); const [resourceError, setResourceError] = useState<unknown>(null); const [tab, setTab] = useState<'home' | 'agents' | 'culture' | 'history' | 'settings'>('home')
+  const { worldId = '' } = useParams(); const token = useToken(); const [game, setGame] = useState<Game | null>(null); const [agents, setAgents] = useState<Agent[]>([]); const [history, setHistory] = useState<HistoryItem[]>([]); const [traditions, setTraditions] = useState<Tradition[]>([]); const [loading, setLoading] = useState(true); const [error, setError] = useState<unknown>(null); const [resourceError, setResourceError] = useState<unknown>(null); const [tab, setTab] = useState<'home' | 'rounds' | 'agents' | 'culture' | 'history' | 'settings'>('home')
   const refresh = async () => {
     const w = await api.world(token, worldId); setGame(w)
     const results = await Promise.allSettled([api.agents(token, worldId), api.history(token, worldId), api.traditions(token, worldId)])
@@ -143,8 +146,49 @@ function WorldPage() {
   if (loading) return <Loading label="Opening this civilization…" />
   if (error || !game) return <ErrorNotice error={error ?? new Error('This world could not be found.')} />
   return <><Link className="back-link" to="/worlds">← All worlds</Link><div className="world-banner" style={{ backgroundImage: `url(${worldArtwork(game.id)})` }}><div><p className="eyebrow">{roleNames[game.player_role]} civilization</p><h1>{game.name}</h1><span className="world-founded">Founded {formatDate(game.created_at)}</span></div><Badge state={game.status === 'active' ? 'active' : game.status === 'archived' ? 'complete' : 'attention'}>{game.status.replaceAll('_', ' ')}</Badge></div>{resourceError !== null && <ErrorNotice error={resourceError} />}
-    <nav className="world-tabs" aria-label="Civilization sections">{(['home','agents','culture','history','settings'] as const).map(item => <button key={item} className={tab === item ? 'tab active' : 'tab'} aria-current={tab === item ? 'page' : undefined} onClick={() => setTab(item)}>{({home:'Overview',agents:'Agents',culture:'Culture',history:'History',settings:'Settings'})[item]}</button>)}</nav>
+    <nav className="world-tabs" aria-label="Civilization sections">{(['home','rounds','agents','culture','history','settings'] as const).map(item => <button key={item} className={tab === item ? 'tab active' : 'tab'} aria-current={tab === item ? 'page' : undefined} onClick={() => setTab(item)}>{({home:'Overview',rounds:'Rounds',agents:'Agents',culture:'Culture',history:'History',settings:'Settings'})[item]}</button>)}</nav>
+    <WorldRounds key={game.id} game={game} token={token} expanded={tab === 'rounds'} onRoundComplete={refresh} />
     {tab === 'home' && <Overview game={game} history={history} token={token} onRefresh={refresh} />}{tab === 'agents' && <AgentsPanel agents={agents} game={game} history={history} token={token} />}{tab === 'culture' && <CulturePanel traditions={traditions} />}{tab === 'history' && <HistoryPanel history={history} />}{tab === 'settings' && <SettingsPanel game={game} token={token} onRefresh={refresh} />}</>
+}
+
+function WorldRounds({ game, token, expanded, onRoundComplete }: { game: Game; token: string; expanded: boolean; onRoundComplete: () => Promise<void> }) {
+  const [rounds, setRounds] = useState<EpisodeSummary[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<unknown>(null)
+  useEffect(() => {
+    const controller = new AbortController()
+    let timer: number | undefined
+    let previous: EpisodeSummary[] | undefined
+    async function poll() {
+      try {
+        const latest = await api.episodes(token, game.id, controller.signal)
+        if (controller.signal.aborted) return
+        const completed = previous?.some(old => !isFinished(old) && latest.some(next => next.id === old.id && next.status === 'complete'))
+        previous = latest
+        setRounds(latest); setError(null)
+        if (completed) void onRoundComplete().catch(() => undefined)
+      } catch (e) { if (!controller.signal.aborted) setError(e) }
+      finally {
+        if (!controller.signal.aborted) {
+          setLoading(false)
+          if (!['archived', 'deleting'].includes(game.status)) timer = window.setTimeout(() => void poll(), 2000)
+        }
+      }
+    }
+    void poll()
+    return () => { controller.abort(); if (timer) window.clearTimeout(timer) }
+  }, [game.id, game.status, token])
+  const open = rounds.filter(round => !isFinished(round))
+  if (!expanded && !loading && !error && !open.length) return null
+  return <section className="world-rounds section-block" aria-labelledby="rounds-heading">
+    <div className="section-heading"><div><p className="eyebrow">{expanded ? 'Your discoveries and councils' : 'Return to your discovery'}</p><h2 id="rounds-heading">{expanded ? 'Recent rounds' : 'Round in progress'}</h2></div><span className="text-small text-muted">Updates automatically</span></div>
+    {error !== null && <ErrorNotice error={error} />}
+    {loading ? <Loading label="Loading round progress…" /> : (expanded ? rounds : open).length ? <div className="round-list">{(expanded ? rounds : open).map(round => <article className={`round-card surface-card ${!isFinished(round) ? 'round-open' : ''}`} key={round.id}>
+      <div className="round-summary"><p className="eyebrow">{roundLabel(round)} · {formatDate(round.created_at)}</p><h3>{stageLabel(round)}</h3>{!isFinished(round) && <p className="text-small text-muted">{isPaused(round) ? 'Open this round to see where it stopped and retry.' : ['awaiting_review', 'awaiting_clarity_choice'].includes(round.stage) ? 'Your decision is needed before the agents continue.' : 'Watch each agent’s reactions and rebuttals as they arrive.'}</p>}</div>
+      <Link className="button button-secondary" to={`/episodes/${round.id}`}>{round.status === 'complete' ? 'Read chronicle' : round.status === 'abandoned' ? 'View round' : isPaused(round) ? 'View progress' : ['awaiting_review', 'awaiting_clarity_choice'].includes(round.stage) ? 'Review discovery' : 'Watch agents'}</Link>
+    </article>)}</div> : <Empty>No rounds yet. Begin a discovery from Overview.</Empty>}
+    {expanded && rounds.length === 50 && <p className="text-small text-muted">Showing the latest 50 rounds. Earlier chronicles are available in History.</p>}
+  </section>
 }
 
 function Overview({ game, history, token, onRefresh }: { game: Game; history: HistoryItem[]; token: string; onRefresh: () => Promise<void> }) {
@@ -188,7 +232,7 @@ function CulturePanel({ traditions }: { traditions: Tradition[] }) {
 
 function HistoryPanel({ history, compact = false }: { history: HistoryItem[]; compact?: boolean }) {
   if (!history.length) return <Empty>No chronicles yet. Your historian will write the first after a discovery.</Empty>
-  return <div className={compact ? 'chronicle-list compact' : 'chronicle-list'}>{history.map((item, index) => <article className="chronicle-card surface-card" key={item.id}><div className="chronicle-meta"><span className="eyebrow">{item.round_kind ?? 'discovery'} · {formatDate(item.created_at)}</span><Badge state={item.outcome === 'unresolved' ? 'attention' : 'complete'}>{item.outcome}</Badge></div><h3>{item.verdict}</h3><p>{item.body}</p>{item.suggestion && !compact && <div className="suggestion surface-subtle"><span className="eyebrow">A thought for another day</span><p>{item.suggestion}</p></div>}{index > 0 && compact && null}</article>)}</div>
+  return <div className={compact ? 'chronicle-list compact' : 'chronicle-list'}>{history.map((item, index) => <article className="chronicle-card surface-card" key={item.id}><div className="chronicle-meta"><span className="eyebrow">{item.round_kind ?? 'discovery'} · {formatDate(item.created_at)}</span><Badge state={item.outcome === 'unresolved' ? 'attention' : 'complete'}>{item.outcome}</Badge></div><h3>{item.verdict}</h3><p>{item.body}</p><Link className="text-button" to={`/episodes/${item.round_id}`}>Open discovery →</Link>{item.suggestion && !compact && <div className="suggestion surface-subtle"><span className="eyebrow">A thought for another day</span><p>{item.suggestion}</p></div>}{index > 0 && compact && null}</article>)}</div>
 }
 
 function SettingsPanel({ game, token, onRefresh }: { game: Game; token: string; onRefresh: () => Promise<void> }) {
@@ -208,23 +252,42 @@ function SettingsPanel({ game, token, onRefresh }: { game: Game; token: string; 
 function EpisodePage() {
   const { episodeId = '' } = useParams(); const token = useToken(); const [episode, setEpisode] = useState<Episode | null>(null); const [loading, setLoading] = useState(true); const [error, setError] = useState<unknown>(null); const [busy, setBusy] = useState(false); const [correction, setCorrection] = useState(''); const [photo, setPhoto] = useState(''); const [commandId, setCommandId] = useState('')
   const reload = () => api.episode(token, episodeId).then(next => { setEpisode(next); return next })
-  useEffect(() => { let alive = true; let timer: number | undefined; async function fetchEpisode() { try { const next = await api.episode(token, episodeId); if (!alive) return; setEpisode(next); setError(null); if (next.observation_id) { void api.photoUrl(token, next.observation_id).then(v => alive && setPhoto(v.url)).catch(() => undefined) } if (!['complete','failed','abandoned'].includes(next.status)) timer = window.setTimeout(() => void fetchEpisode(), 2000) } catch (e) { if (alive) setError(e) } finally { if (alive) setLoading(false) } } void fetchEpisode(); return () => { alive = false; if (timer) window.clearTimeout(timer) } }, [episodeId, token])
+  const episodeStatus = episode?.id === episodeId ? episode.status : undefined
+  useEffect(() => { setEpisode(null); setLoading(true); setPhoto(''); setCommandId('') }, [episodeId])
+  useEffect(() => {
+    if (episodeStatus && ['complete', 'failed', 'abandoned', 'needs_attention'].includes(episodeStatus)) return
+    const controller = new AbortController()
+    let timer: number | undefined
+    async function fetchEpisode() {
+      try {
+        const next = await api.episode(token, episodeId, controller.signal)
+        if (controller.signal.aborted) return
+        setEpisode(next); setError(null)
+        if (next.observation_id) void api.photoUrl(token, next.observation_id).then(v => { if (!controller.signal.aborted) setPhoto(v.url) }).catch(() => undefined)
+      } catch (e) { if (!controller.signal.aborted) setError(e) }
+      finally {
+        if (!controller.signal.aborted) { setLoading(false); timer = window.setTimeout(() => void fetchEpisode(), 2000) }
+      }
+    }
+    void fetchEpisode()
+    return () => { controller.abort(); if (timer) window.clearTimeout(timer) }
+  }, [episodeId, token, episodeStatus])
   async function decision(payload: Parameters<typeof api.descriptionDecision>[2]) { setBusy(true); setError(null); try { const result = await api.descriptionDecision(token, episodeId, payload); if (result.command_id) setCommandId(result.command_id); await reload() } catch (e) { setError(e) } finally { setBusy(false) } }
   async function retry() { setBusy(true); setError(null); try { const result = await api.retryEpisode(token, episodeId); if (result.command_id) setCommandId(result.command_id); await reload() } catch (e) { setError(e) } finally { setBusy(false) } }
   if (loading) return <Loading label="Reconnecting to this discovery…" />
   if (error && !episode) return <><Link className="back-link" to="/worlds">← Your worlds</Link><ErrorNotice error={error} /></>
   if (!episode) return <ErrorNotice error={new Error('This discovery could not be found.')} />
-  const stageLabel: Record<string,string> = { queued:'Preparing discovery', describing:'Describing the photo', awaiting_review:'Review the description', awaiting_clarity_choice:'Choose how to continue', reacting:'Agents are reflecting', debating:'Agents are responding', writing:'Historian is writing', complete:'Chronicle complete', failed:'Discovery stopped', needs_attention:'Needs attention', abandoned:'Discovery set aside' }
-  const stepOrder = ['describing','reacting','debating','writing','complete']; const step = episode.stage === 'awaiting_review' || episode.stage === 'awaiting_clarity_choice' ? 0 : Math.max(0, stepOrder.indexOf(episode.stage)); const done = episode.status === 'complete'
-  return <><Link className="back-link" to="/worlds">← Your worlds</Link><div className="episode-layout"><main className="episode-main"><div className="page-heading episode-heading"><div><p className="eyebrow">Discovery · {formatDate(episode.created_at)}</p><h1>{done ? 'The chronicle' : 'A discovery is unfolding'}</h1></div><Badge state={done ? 'complete' : ['failed','needs_attention'].includes(episode.status) ? 'attention' : 'active'}>{stageLabel[episode.stage] ?? episode.status}</Badge></div>
+  const done = episode.status === 'complete'
+  return <><Link className="back-link" to={episode.game_id ? `/worlds/${episode.game_id}` : "/worlds"}>← Back to civilization</Link><div className="episode-layout"><main className="episode-main"><div className="page-heading episode-heading"><div><p className="eyebrow">{roundLabel(episode)} · {formatDate(episode.created_at)}</p><h1>{done ? 'The chronicle' : 'A discovery is unfolding'}</h1></div><Badge state={done ? 'complete' : ['failed','needs_attention'].includes(episode.status) ? 'attention' : 'active'}>{stageLabel(episode)}</Badge></div>
+    <RoundProgress episode={episode} watchLink />
     {photo && <img className="episode-photo" src={photo} alt="Your submitted observation" />}
-    {!done && !['failed','needs_attention','abandoned'].includes(episode.status) && <section className="progress-card surface-card"><div className="progress-heading"><div><span className="eyebrow">Your world is thinking</span><h2>{stageLabel[episode.stage] ?? 'Discovery in progress'}</h2></div><span className="live-dot" aria-label="Updating automatically" /></div><ol className="progress-steps">{['Shared evidence','First reactions','Rebuttals','Chronicle'].map((label, i) => <li className={i < step ? 'complete' : i === step ? 'current' : ''} key={label}><span className="step-mark">{i < step ? '✓' : i + 1}</span><span>{label}</span></li>)}</ol><p className="text-muted">You can leave this page. Progress is saved and will be here when you return.</p></section>}
     {episode.description && <section className="evidence-card surface-subtle"><span className="eyebrow">Shared photo description</span><p>{episode.description}</p>{episode.description_status === 'awaiting_review' && <span className="text-small text-muted">This description is waiting for your review.</span>}</section>}
     {episode.stage === 'awaiting_review' && <section className="decision-card surface-card"><h2>Does this match what you see?</h2><p className="text-muted">Correct visible details if needed. Meaning and interpretation are for you and your agents to explore.</p><label htmlFor="correction">Correct the description <span className="optional">(optional)</span></label><textarea id="correction" value={correction} maxLength={1800} onChange={e => setCorrection(e.target.value)} placeholder="For example: the object in the lower corner is a seed, not a stone." />{error !== null && <ErrorNotice error={error} />}<div className="form-actions"><button className="button button-secondary" disabled={busy} onClick={() => void decision({ decision:'accept' })}>Accept description</button><button className="button" disabled={busy || !correction.trim()} onClick={() => void decision({ decision:'correct', player_correction: correction.trim() })}>Save correction</button></div></section>}
     {episode.stage === 'awaiting_clarity_choice' && <section className="decision-card surface-card"><h2>The photo is hard to read</h2><p className="text-muted">The description is uncertain. You can still continue, and agents will be asked not to treat uncertain details as fact.</p>{error !== null && <ErrorNotice error={error} />}<div className="form-actions"><button className="button button-secondary" disabled={busy} onClick={() => void decision({ decision:'choose_clarity', clarity_choice:'try_another_photo' })}>Try another photo</button><button className="button" disabled={busy} onClick={() => void decision({ decision:'choose_clarity', clarity_choice:'continue_uncertain' })}>Continue with uncertainty</button></div></section>}
     {error !== null && episode && !['awaiting_review','awaiting_clarity_choice'].includes(episode.stage) && <ErrorNotice error={error} />}
     {commandId && <p className="text-small text-muted" role="status">Command {commandId} accepted. Reconnecting to progress…</p>}
     {(['failed','needs_attention'].includes(episode.status)) && <section className="attention-card"><h2>This discovery needs another try</h2><p>{episode.error_message ?? 'Processing paused before the chronicle was saved. Your evidence remains safe.'}</p>{error !== null && <ErrorNotice error={error} />}<button className="button" disabled={busy} onClick={() => void retry()}>{busy ? 'Retrying…' : 'Retry discovery'}</button></section>}
+    <LiveDebate key={episode.id} episode={episode} token={token} />
     {episode.chronicle && <ChronicleDetail chronicle={episode.chronicle} />}
     {episode.status === 'abandoned' && <Empty>This photo was set aside. No beliefs or traditions changed.</Empty>}
     </main><aside className="episode-aside"><div className="surface-card aside-card"><p className="eyebrow">One story, four voices</p><h3>What happens next</h3><p className="text-muted">Each agent reacts to the same shared evidence, then they respond to one another. Their debate is temporary. Your historian saves the verdict and meaningful dissent.</p><div className="aside-rule" /><p className="text-small text-muted">A split or unresolved disagreement still completes the discovery.</p></div></aside></div></>

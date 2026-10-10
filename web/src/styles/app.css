@@ -166,6 +166,15 @@
 .episode-heading h1 { font-size: var(--text-2xl); }
 .episode-photo { width: 100%; max-height: 30rem; object-fit: cover; border-radius: var(--radius-lg); margin-bottom: var(--space-5); }
 .progress-card, .decision-card { margin-bottom: var(--space-5); padding: var(--space-5); border-top: 2px solid var(--text-primary); }
+.world-rounds { margin-bottom: var(--space-8); }
+.round-list { display: grid; gap: var(--space-3); }
+.round-card { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-4); padding: var(--space-5); }
+.round-open { border-left: 3px solid var(--accent-secondary); }
+.round-summary { flex: 1 1 15rem; min-width: 0; }
+.round-summary h3 { margin-bottom: var(--space-2); }
+.round-summary p { margin-bottom: var(--space-2); }
+.round-card .button { flex-shrink: 0; }
+.live-debate { scroll-margin-top: var(--space-6); }
 .progress-heading { display: flex; align-items: center; justify-content: space-between; }
 .progress-heading h2 { margin: .25rem 0 var(--space-4); font-size: var(--text-xl); }
 .live-dot { width: .7rem; aspect-ratio: 1; border-radius: 50%; background: var(--color-moss); box-shadow: 0 0 0 .3rem var(--color-moss-soft); }
@@ -184,6 +193,30 @@
 .chronicle-detail h2 { font-size: var(--text-2xl); }
 .chronicle-body { font-family: var(--font-display); font-size: 1.3rem; line-height: 1.8; max-width: 65ch; }
 .chronicle-body > p:first-child::first-letter { float: left; padding: .12em .14em 0 0; color: var(--accent-secondary); font-family: var(--font-title); font-size: 2.7em; line-height: .95; }
+.live-debate { margin-block: var(--space-8); border-top: 1px solid var(--border-subtle); padding-top: var(--space-6); }
+.live-debate .section-heading { align-items: center; }
+.live-debate h2 { margin-bottom: 0; }
+.debate-state { color: var(--accent-secondary); font-size: var(--text-xs); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; }
+.debate-update { padding-left: var(--space-4); border-left: 2px solid var(--accent-secondary); color: var(--text-secondary); }
+.debate-agents { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); padding: 0; margin-block: var(--space-6); list-style: none; }
+.debate-agents li { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
+.debate-agents .agent-avatar, .debate-speaker .agent-avatar { flex: 0 0 2.5rem; }
+.debate-agents strong, .debate-speaker strong { display: block; font-family: var(--font-display); font-size: 1.35rem; }
+.debate-agents small { display: block; color: var(--text-secondary); font-size: var(--text-xs); }
+.debate-phase { margin-top: var(--space-8); }
+.debate-phase-heading { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-4); border-bottom: 1px solid var(--border-subtle); }
+.debate-phase-heading h3 { font-size: 1.7rem; }
+.debate-contributions { padding: 0; margin: 0; list-style: none; }
+.debate-contribution { border-bottom: 1px solid var(--border-subtle); padding-block: var(--space-5); overflow-wrap: anywhere; }
+.debate-speaker { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4); }
+.debate-speaker .eyebrow { font-size: .65rem; }
+.debate-contribution > p { font-family: var(--font-display); font-size: 1.25rem; line-height: 1.65; white-space: pre-line; margin-bottom: var(--space-3); }
+.debate-contribution details { font-size: var(--text-sm); color: var(--text-secondary); }
+.debate-contribution details p { margin-top: var(--space-3); margin-bottom: 0; white-space: pre-line; }
+.debate-empty { padding-block: var(--space-4); color: var(--text-secondary); font-style: italic; }
+.watched-debate { margin-block: var(--space-6); }
+.watched-debate > summary { padding-block: var(--space-3); color: var(--text-secondary); }
+@media (max-width: 28rem) { .debate-agents { grid-template-columns: minmax(0, 1fr); } .live-debate .section-heading { align-items: flex-start; } }
 .episode-aside .aside-card { position: sticky; top: var(--space-5); }
 .aside-rule { height: 1px; margin-block: var(--space-4); background: var(--border-subtle); }
 .admin-panel { padding: var(--space-5); }
@@ -234,7 +267,7 @@
   .world-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .overview-grid, .episode-layout { grid-template-columns: minmax(0, 1fr); }
   .overview-aside { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .episode-aside { order: -1; }
+  .episode-aside { order: 1; }
   .episode-aside .aside-card { position: static; }
   .content-columns { grid-template-columns: 1fr; }
   .culture-columns { grid-template-columns: 1fr; }
