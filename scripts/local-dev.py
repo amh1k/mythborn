@@ -5,6 +5,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import signal
 import socket
@@ -184,11 +185,48 @@ def stop():
     save_state(state)
 
 
+def restart_backend():
+    """Reload the API/worker while leaving Temporal's durable timers running."""
+    state = load_state()
+    external_api = None
+    if port_open(8080) and not (state.get('api') and running(state['api'])):
+        listeners = subprocess.check_output(['ss', '-ltnp', 'sport = :8080'], text=True)
+        match = re.search(r'pid=(\d+)', listeners)
+        if not match:
+            raise RuntimeError('Cannot identify the API listener on port 8080.')
+        pid = int(match.group(1))
+        executable = os.readlink(f'/proc/{pid}/exe')
+        cwd = Path(os.readlink(f'/proc/{pid}/cwd'))
+        known_api = executable == str(ROOT / 'bin' / 'mythborn-api') or (executable.startswith('/tmp/go-build') and executable.endswith('/exe/api'))
+        if cwd != ROOT or not known_api:
+            raise RuntimeError('Port 8080 belongs to a different process; no service was stopped.')
+        external_api = {'pid': pid, 'identity': process_identity(pid)}
+    for name in ['worker', 'api']:
+        entry = state.get(name)
+        if entry and running(entry):
+            os.killpg(entry['pid'], signal.SIGTERM)
+            deadline = time.monotonic() + 10
+            while running(entry) and time.monotonic() < deadline:
+                time.sleep(0.1)
+            if running(entry):
+                raise RuntimeError(f'{name} did not stop within 10 seconds.')
+        state.pop(name, None)
+    save_state(state)
+    if external_api and running(external_api):
+        os.kill(external_api['pid'], signal.SIGTERM)
+        deadline = time.monotonic() + 10
+        while running(external_api) and time.monotonic() < deadline:
+            time.sleep(0.1)
+        if running(external_api):
+            raise RuntimeError('The previous API did not stop within 10 seconds.')
+    start()
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=['start', 'status', 'stop'])
+    parser.add_argument('action', choices=['start', 'status', 'stop', 'restart-backend'])
     args = parser.parse_args()
     try:
-        {'start': start, 'status': status, 'stop': stop}[args.action]()
+        {'start': start, 'status': status, 'stop': stop, 'restart-backend': restart_backend}[args.action]()
     except (OSError, RuntimeError) as error:
         parser.exit(1, f'{error}\n')

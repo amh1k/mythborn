@@ -71,11 +71,13 @@ A discovery episode follows this order:
 
 1. Save the observation and shared photo description.
 2. Signal all four agents with the same evidence, their separate memories, and any attributed player statement.
-3. Each agent makes one initial reaction. Live previews may show reactions as they become available; individual reactions are temporary workflow data, not permanent game records.
+3. Each agent makes one initial reaction. The live debate view shows reactions individually as they become available; individual reactions are temporary workflow data, not permanent game records. All roles can watch. Observer has no message or participation control.
 4. Gather the tradition ideas raised in the initial reactions. Give every agent the other reactions and the same candidate list for its one rebuttal.
 5. Each agent's rebuttal includes proposed belief revisions and explicit support or opposition for the candidate traditions. Rebuttals are temporary workflow data. A new idea first raised in a rebuttal can be summarized in the chronicle for consideration in a later episode or council.
 6. Calculate the proposed cultural outcome using the rule in section 6. The historian determines the leading interpretation from the complete debate and writes the chronicle from the evidence, both phases, final positions, and proposed outcome. Its interpretation outcome is consensus, majority, or unresolved; no player approval is required.
 7. Save the chronicle, belief revisions, tradition revisions, and one optional suggestion together as the completed episode. Only then mark the episode complete.
+
+The civilization’s Rounds tab lists recent rounds with their saved stage, including rounds without a chronicle. An unfinished round also has a visible Watch agents link on the civilization page. Reopening it reloads its current stage and available active-workflow contributions. Paused rounds keep their stage visible and offer a retry; completed rounds reopen the saved chronicle. Observer can watch but cannot participate.
 
 The debate has exactly one reaction and one rebuttal per agent; it does not wait for unanimity or another debate to break a tie. The historian is one of the four agents in both phases and also writes the final chronicle. A round means the complete discovery process, not an individual reaction/rebuttal phase. The chronicle records the leading interpretation or unresolved disagreement, its evidence, important dissent, and what changed in the society. It must link back to the observation. Keep this final record and essential metadata rather than permanent reaction/rebuttal records.
 
@@ -129,7 +131,7 @@ An ending operation is idempotent: retries cannot create multiple closing chroni
 | Civilization list | Open active worlds or read-only archives; start a new civilization. |
 | Create civilization | Preview all three roles, choose one permanently, and name the world. |
 | Active world | See the current suggestion, take or upload a photo, watch episode progress, and navigate to agents, culture, and history. |
-| Discovery episode | See the photo, shared evidence, saved progress, belief changes, cultural outcome, and final chronicle. Reaction/rebuttal previews may appear live but are not permanent history. |
+| Discovery episode | See the photo, shared evidence, saved progress, belief changes, cultural outcome, and final chronicle. Reaction/rebuttal previews appear live as agents finish, with per-agent progress. They are read-only and are not permanent history. |
 | Agent view | Read an agent's role, current beliefs, and belief history. Messenger mode also offers a conversation thread tied to a discovery. |
 | Culture and history | Inspect adopted, contested, and retired traditions; follow their changes to observations, council notes, and chronicles. |
 | Settings | Turn photo-description review on or off, manage the account, and end or delete the civilization. |
@@ -147,6 +149,8 @@ Persist account permissions, games, initial configuration templates, copied agen
 Use an image-capable Gemma model for shared visual evidence and a Gemma model for agent generation. Temporal provides durable orchestration; Render hosts the web app and worker; Tiger Data stores civilization state and searchable history. Private object storage holds photos. [TECHNOLOGIES.md](./TECHNOLOGIES.md) now selects the specific model and serving API, authentication provider, photo storage, and deployment layout. Sentry Agent Tracing and Entire remain optional additions.
 
 When a model or worker fails, show the episode as still processing or needing attention, retain completed steps, and retry safely. A player may return later. If processing ultimately fails, show a clear retry action without inventing a chronicle or changing beliefs. Unclear images and unsupported uploads use the behavior in section 4.
+
+For model rate limits, keep the episode processing and display “Rate limit reached. Retrying in 1 minute…” for the affected agent or phase. Respect a longer provider retry delay. Retry automatically without restarting completed reactions or rebuttals; keep those responses visible while waiting. Photo description and historian writing follow the same rule. A quota error is execution status, never a character response or an unresolved chronicle.
 
 ## 12. Version 1 acceptance scenarios
 

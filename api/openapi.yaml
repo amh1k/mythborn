@@ -312,6 +312,45 @@ paths:
           $ref: '#/components/responses/InternalError'
         '503':
           $ref: '#/components/responses/AuthenticationUnavailable'
+  /worlds/{id}/episodes:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: World UUID.
+        schema:
+          $ref: '#/components/schemas/UUID'
+    get:
+      operationId: listWorldEpisodes
+      tags: [Observations]
+      summary: List recent rounds and their saved progress
+      description: Owner/admin access. Returns up to 50 recent rounds in descending sequence order, including queued, running, paused, complete, and abandoned rounds. Poll about every two seconds for current stages. Responses use Cache-Control no-store. Reopen each round through GET /episodes/{id}; raw agent contributions are obtained separately from its live debate endpoint.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Recent rounds, including discoveries with no chronicle yet.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [episodes]
+                properties:
+                  episodes:
+                    type: array
+                    maxItems: 50
+                    items:
+                      $ref: '#/components/schemas/Round'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/AuthenticationUnavailable'
   /episodes/{id}:
     parameters:
       - name: id
@@ -334,6 +373,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EpisodeDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/AuthenticationUnavailable'
+  /episodes/{id}/debate:
+    parameters:
+      - $ref: '#/components/parameters/EpisodeId'
+    get:
+      operationId: getLiveDebate
+      tags: [Observations]
+      summary: Watch live reactions and rebuttals
+      description: >-
+        Read-only owner/admin access for every game role, including Observer.
+        Reads bounded public contributions from the current Temporal workflow;
+        it does not grant Messenger permissions or write transcript records.
+        Poll about every two seconds while the episode is active. Responses
+        use Cache-Control no-store. Unavailable previews do not interrupt durable
+        episode reads. Completed/abandoned rounds return finished and no preview.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Best-effort preview availability, fixed game role, and optional live contributions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DebateDetail'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1191,6 +1263,57 @@ components:
         episode: {$ref: '#/components/schemas/Round'}
         observation: {$ref: '#/components/schemas/EpisodeObservation'}
         chronicle: {$ref: '#/components/schemas/Chronicle'}
+    DebateDetail:
+      type: object
+      required: [state, player_role, preview]
+      properties:
+        state: {type: string, enum: [waiting, live, unavailable, finished]}
+        player_role: {$ref: '#/components/schemas/PlayerRole'}
+        preview:
+          oneOf:
+            - $ref: '#/components/schemas/DebatePreview'
+            - type: 'null'
+    DebatePreview:
+      type: object
+      required: [game_id, round_id, attempt_id, phase, agents, entries]
+      properties:
+        game_id: {$ref: '#/components/schemas/UUID'}
+        round_id: {$ref: '#/components/schemas/UUID'}
+        attempt_id: {$ref: '#/components/schemas/UUID'}
+        phase: {type: string, enum: [describing, reaction, rebuttal, writing]}
+        retries:
+          type: array
+          description: Temporary model rate-limit waits; successful responses are preserved and retrying is automatic.
+          items:
+            type: object
+            required: [phase, retry_at, attempt]
+            properties:
+              agent_id: {$ref: '#/components/schemas/UUID'}
+              phase: {type: string, enum: [describing, reaction, rebuttal, writing]}
+              retry_at: {type: string, format: date-time}
+              attempt: {type: integer, minimum: 1}
+        agents:
+          type: array
+          maxItems: 4
+          items:
+            type: object
+            required: [agent_id, agent_type, display_name]
+            properties:
+              agent_id: {$ref: '#/components/schemas/UUID'}
+              agent_type: {$ref: '#/components/schemas/AgentType'}
+              display_name: {type: string}
+        entries:
+          type: array
+          maxItems: 8
+          items:
+            type: object
+            required: [id, agent_id, phase, text]
+            properties:
+              id: {$ref: '#/components/schemas/UUID'}
+              agent_id: {$ref: '#/components/schemas/UUID'}
+              phase: {type: string, enum: [reaction, rebuttal]}
+              text: {type: string}
+              reasoning: {type: string}
     Agent:
       type: object
       required: [id, game_id, agent_type, display_name, personality_prompt, created_at]
