@@ -11,12 +11,14 @@ import (
 	"github.com/amh1k/mythborn/internal/auth"
 	"github.com/amh1k/mythborn/internal/contracts"
 	"github.com/amh1k/mythborn/internal/storage"
+	"github.com/amh1k/mythborn/internal/workflow"
 )
 
 type Dependencies struct {
 	DB                 contracts.Database
 	Auth               auth.Authenticator
 	Photos             storage.PhotoStorage
+	Debates            workflow.DebatePreviewReader
 	Logger             *slog.Logger
 	CORSAllowedOrigins []string
 }

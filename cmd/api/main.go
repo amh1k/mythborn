@@ -16,6 +16,9 @@ import (
 	"github.com/amh1k/mythborn/internal/database"
 	"github.com/amh1k/mythborn/internal/httpapi/handlers"
 	"github.com/amh1k/mythborn/internal/storage"
+	"github.com/amh1k/mythborn/internal/workflow"
+	"github.com/amh1k/mythborn/internal/workflows"
+	"go.temporal.io/sdk/client"
 )
 
 func main() {
@@ -45,10 +48,27 @@ func main() {
 		os.Exit(1)
 	}
 
+	var debates workflow.DebatePreviewReader
+	if cfg.TemporalAddress != "" {
+		options := client.Options{HostPort: cfg.TemporalAddress, Namespace: cfg.TemporalNamespace}
+		if cfg.TemporalAPIKey != "" {
+			options.Credentials = client.NewAPIKeyStaticCredentials(cfg.TemporalAPIKey)
+		}
+		// Connect on the first preview request; a Temporal outage must not stop
+		// sign-in, durable episode reads, or other API operations.
+		temporalClient, err := client.NewLazyClient(options)
+		if err != nil {
+			slog.Warn("live debate previews unavailable")
+		} else {
+			defer temporalClient.Close()
+			debates = workflows.DebateReader{Client: temporalClient}
+		}
+	}
+
 	server := &http.Server{
 		Addr: cfg.HTTPAddress,
 		Handler: api.NewHandler(api.Dependencies{
-			DB: db, Auth: verifier, Photos: photos, Logger: slog.Default(), CORSAllowedOrigins: cfg.CORSAllowedOrigins,
+			DB: db, Auth: verifier, Photos: photos, Debates: debates, Logger: slog.Default(), CORSAllowedOrigins: cfg.CORSAllowedOrigins,
 		}, handlers.Registrar{}),
 		ReadHeaderTimeout: 5 * time.Second,
 	}

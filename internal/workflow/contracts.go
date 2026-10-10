@@ -23,6 +23,7 @@ const (
 	AccountDeletionSignalName   = "mythborn.account.deletion"
 	AgentRequestSignalName      = "mythborn.agent.request"
 	AgentResultSignalName       = "mythborn.agent.result"
+	DebatePreviewQueryName      = "mythborn.round.debate-preview"
 	WorkflowTaskQueue           = "mythborn-workers"
 	MessengerReplyTTL           = 24 * time.Hour
 )
@@ -142,6 +143,46 @@ type AgentReaction struct {
 	Interpretation string          `json:"interpretation"`
 	Reasoning      string          `json:"reasoning"`
 	TraditionIdeas []TraditionIdea `json:"tradition_ideas,omitempty"`
+}
+
+// DebatePreview exposes only public contributions from the current round.
+// It lives in workflow state, never in permanent game records or search indexes.
+type DebatePreview struct {
+	GameID    domain.ID     `json:"game_id"`
+	RoundID   domain.ID     `json:"round_id"`
+	AttemptID domain.ID     `json:"attempt_id"`
+	Phase     string        `json:"phase"`
+	Agents    []DebateAgent `json:"agents"`
+	Entries   []DebateEntry `json:"entries"`
+	Retries   []ModelRetry  `json:"retries,omitempty"`
+}
+
+const ModelRateLimitErrorType = "model_rate_limited"
+
+// ModelRetry is transient progress. It is never included in a chronicle.
+type ModelRetry struct {
+	AgentID domain.ID `json:"agent_id,omitempty"`
+	Phase   string    `json:"phase"`
+	RetryAt time.Time `json:"retry_at"`
+	Attempt int       `json:"attempt"`
+}
+
+type DebateAgent struct {
+	AgentID     domain.ID        `json:"agent_id"`
+	Type        domain.AgentType `json:"agent_type"`
+	DisplayName string           `json:"display_name"`
+}
+
+type DebateEntry struct {
+	ID        domain.ID `json:"id"`
+	AgentID   domain.ID `json:"agent_id"`
+	Phase     string    `json:"phase"`
+	Text      string    `json:"text"`
+	Reasoning string    `json:"reasoning,omitempty"`
+}
+
+type DebatePreviewReader interface {
+	Read(context.Context, domain.ID, domain.ID) (*DebatePreview, error)
 }
 
 type TraditionIdea struct {

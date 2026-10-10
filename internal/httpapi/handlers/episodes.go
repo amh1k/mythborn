@@ -17,8 +17,19 @@ import (
 func registerEpisodeRoutes(mux *http.ServeMux, deps api.Dependencies) {
 	store := repository.New(deps.DB)
 	episodes := app.Episodes{Store: store}
+	debates := app.Debates{Store: store, Reader: deps.Debates}
 	observations := app.Observations{Store: store, Photos: deps.Photos}
 	wrap := func(fn http.HandlerFunc) http.Handler { return auth.Middleware(deps.Auth, fn) }
+	mux.Handle("GET /api/v1/worlds/{id}/episodes", wrap(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		p, _ := auth.PrincipalFromContext(r.Context())
+		rounds, err := episodes.List(r.Context(), p, domain.ID(r.PathValue("id")))
+		if err != nil {
+			writeError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"episodes": rounds})
+	}))
 	mux.Handle("POST /api/v1/worlds/{id}/observations", wrap(func(w http.ResponseWriter, r *http.Request) {
 		r.Body = http.MaxBytesReader(w, r.Body, 11<<20)
 		if err := r.ParseMultipartForm(11 << 20); err != nil {
@@ -49,6 +60,7 @@ func registerEpisodeRoutes(mux *http.ServeMux, deps api.Dependencies) {
 		writeJSON(w, http.StatusAccepted, map[string]domain.ID{"observation_id": obsID, "episode_id": episodeID, "command_id": commandID})
 	}))
 	mux.Handle("GET /api/v1/episodes/{id}", wrap(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
 		p, _ := auth.PrincipalFromContext(r.Context())
 		detail, err := episodes.Get(r.Context(), p, domain.ID(r.PathValue("id")))
 		if err != nil {
@@ -74,6 +86,16 @@ func registerEpisodeRoutes(mux *http.ServeMux, deps api.Dependencies) {
 			return
 		}
 		writeJSON(w, http.StatusAccepted, map[string]domain.ID{"command_id": id})
+	}))
+	mux.Handle("GET /api/v1/episodes/{id}/debate", wrap(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		p, _ := auth.PrincipalFromContext(r.Context())
+		detail, err := debates.Get(r.Context(), p, domain.ID(r.PathValue("id")))
+		if err != nil {
+			writeError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, detail)
 	}))
 	mux.Handle("POST /api/v1/episodes/{id}/retry", wrap(func(w http.ResponseWriter, r *http.Request) {
 		p, _ := auth.PrincipalFromContext(r.Context())

@@ -67,7 +67,8 @@ type DescriptionResult struct {
 	Reason      string `json:"reason,omitempty"`
 }
 
-func (a *Activities) DescribePhoto(ctx context.Context, input DescriptionInput) (DescriptionResult, error) {
+func (a *Activities) DescribePhoto(ctx context.Context, input DescriptionInput) (out DescriptionResult, err error) {
+	defer func() { err = modelActivityError(err) }()
 	round, err := a.Store.LoadRoundContext(ctx, input.GameID, input.RoundID)
 	if err != nil {
 		return DescriptionResult{}, err
@@ -144,7 +145,8 @@ type AgentPhaseInput struct {
 	Request workflow.AgentRequest `json:"request"`
 }
 
-func (a *Activities) GenerateAgentPhase(ctx context.Context, input AgentPhaseInput) (workflow.AgentResult, error) {
+func (a *Activities) GenerateAgentPhase(ctx context.Context, input AgentPhaseInput) (out workflow.AgentResult, err error) {
+	defer func() { err = modelActivityError(err) }()
 	req := input.Request
 	if req.Agent.Agent.ID == "" || req.Agent.Agent.GameID != req.GameID {
 		return workflow.AgentResult{}, fmt.Errorf("agent is not part of the round")
@@ -213,7 +215,8 @@ type HistorianInput struct {
 	Traditions    []workflow.TraditionChange `json:"traditions,omitempty"`
 }
 
-func (a *Activities) WriteHistorianRecord(ctx context.Context, input HistorianInput) (workflow.HistorianRecord, error) {
+func (a *Activities) WriteHistorianRecord(ctx context.Context, input HistorianInput) (out workflow.HistorianRecord, err error) {
+	defer func() { err = modelActivityError(err) }()
 	query := evidenceText(input.Context)
 	memories, err := a.Retriever.Relevant(ctx, input.Context.Game.ID, input.Context.HistorianAgentID, query)
 	if err != nil {
@@ -349,7 +352,8 @@ type MessengerInput struct {
 	Command workflow.Command `json:"command"`
 }
 
-func (a *Activities) RunMessengerExchange(ctx context.Context, input MessengerInput) error {
+func (a *Activities) RunMessengerExchange(ctx context.Context, input MessengerInput) (err error) {
+	defer func() { err = modelActivityError(err) }()
 	cmd := input.Command
 	if cmd.RoundID == "" || cmd.GameID == "" || cmd.Payload.AgentID == "" || strings.TrimSpace(cmd.Payload.Message) == "" {
 		return fmt.Errorf("messenger command is incomplete")

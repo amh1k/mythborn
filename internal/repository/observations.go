@@ -95,6 +95,32 @@ func (s *Store) CreateDiscovery(ctx context.Context, in DiscoveryInput) (domain.
 func isNoRows(err error) bool { return errors.Is(err, contracts.ErrNoRows) }
 
 func (s *Store) GetRound(ctx context.Context, roundID domain.ID) (domain.Round, error) {
+	r, err := scanRound(s.DB.QueryRow(ctx, `SELECT `+roundColumns+` FROM rounds WHERE id=$1`, string(roundID)))
+	return r, normalizeNotFound(err)
+}
+
+const roundColumns = `id::text,game_id::text,sequence_number,kind,observation_id::text,status,stage,error_code,started_at,completed_at,created_at,updated_at`
+
+// ListRounds includes unfinished discoveries, which have no chronicle yet.
+// The existing (game_id, sequence_number) index bounds this recent-round read.
+func (s *Store) ListRounds(ctx context.Context, gameID domain.ID) ([]domain.Round, error) {
+	rows, err := s.DB.Query(ctx, `SELECT `+roundColumns+` FROM rounds WHERE game_id=$1 ORDER BY sequence_number DESC LIMIT 50`, string(gameID))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]domain.Round, 0)
+	for rows.Next() {
+		round, err := scanRound(rows)
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, round)
+	}
+	return items, rows.Err()
+}
+
+func scanRound(row contracts.Row) (domain.Round, error) {
 	var r domain.Round
 	var id, gid, kind, status, stage string
 	var sequence int64
@@ -102,7 +128,7 @@ func (s *Store) GetRound(ctx context.Context, roundID domain.ID) (domain.Round, 
 	var errorCode *string
 	var started, completed *time.Time
 	var created, updated time.Time
-	err := s.DB.QueryRow(ctx, `SELECT id::text,game_id::text,sequence_number,kind,observation_id::text,status,stage,error_code,started_at,completed_at,created_at,updated_at FROM rounds WHERE id=$1`, string(roundID)).Scan(&id, &gid, &sequence, &kind, &observationID, &status, &stage, &errorCode, &started, &completed, &created, &updated)
+	err := row.Scan(&id, &gid, &sequence, &kind, &observationID, &status, &stage, &errorCode, &started, &completed, &created, &updated)
 	if err != nil {
 		return r, normalizeNotFound(err)
 	}

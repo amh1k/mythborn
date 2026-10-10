@@ -59,6 +59,9 @@ func Coordinator(ctx tw.Context, gameID domain.ID, carriedProgress map[domain.ID
 	if progress == nil {
 		progress = map[domain.ID]*RoundProgress{}
 	}
+	if err := registerDebateQuery(ctx, progress); err != nil {
+		return err
+	}
 	for {
 		terminate := false
 		selector := tw.NewSelector(ctx)
@@ -118,6 +121,7 @@ func Agent(ctx tw.Context, request workflow.AgentRequest) (workflow.AgentResult,
 }
 
 type RoundProgress struct {
+	Preview          *workflow.DebatePreview `json:"-"`
 	Fingerprint      string
 	Reactions        []workflow.AgentReaction
 	Candidates       []workflow.TraditionIdea
@@ -146,9 +150,9 @@ func handleCommand(ctx tw.Context, command workflow.Command, progress map[domain
 		}
 		return processRound(ctx, command, progress)
 	case workflow.CommandMessengerExchange:
-		err := tw.ExecuteActivity(ctx, activityMessenger, struct {
+		err := modelActivity(ctx, command, nil, command.Payload.AgentID, "messenger", activityMessenger, struct {
 			Command workflow.Command `json:"command"`
-		}{command}).Get(ctx, nil)
+		}{command}, nil)
 		if err == nil {
 			// Messenger summaries and beliefs feed future retrieval. Discard any
 			// uncommitted debate snapshot so a retry sees the new memory.
@@ -200,6 +204,7 @@ func processRound(ctx tw.Context, command workflow.Command, progressByRound map[
 		*progress = RoundProgress{}
 	}
 	progress.Fingerprint = fingerprint
+	progress.Preview = newDebatePreview(command, current, progress)
 	if current.Round.Kind == domain.RoundKindDiscovery {
 		if current.Observation == nil {
 			return fmt.Errorf("discovery round has no observation")
@@ -209,7 +214,8 @@ func processRound(ctx tw.Context, command workflow.Command, progressByRound map[
 				return err
 			}
 			var description activitiesDescriptionResult
-			if err := tw.ExecuteActivity(ctx, activityDescribePhoto, descriptionInput(command)).Get(ctx, &description); err != nil {
+			progress.Preview.Phase = "describing"
+			if err := modelActivity(ctx, command, progress.Preview, "", "describing", activityDescribePhoto, descriptionInput(command), &description); err != nil {
 				return err
 			}
 			if !description.Usable || current.Game.ReviewPhotoDescription {
@@ -230,7 +236,7 @@ func processRound(ctx tw.Context, command workflow.Command, progressByRound map[
 		}
 	}
 	if current.Round.Kind == domain.RoundKindClosing {
-		return finalizeClosing(ctx, command, current)
+		return finalizeClosing(ctx, command, current, progress.Preview)
 	}
 	if current.Round.Stage == domain.RoundStageQueued || current.Round.Stage == domain.RoundStageDescribing || current.Round.Stage == domain.RoundStageAwaitingReview || current.Round.Stage == domain.RoundStageAwaitingClarityChoice {
 		if err := tw.ExecuteActivity(ctx, activitySetStage, command.GameID, command.RoundID, domain.RoundStatusRunning, domain.RoundStageReacting).Get(ctx, nil); err != nil {
@@ -239,8 +245,9 @@ func processRound(ctx tw.Context, command workflow.Command, progressByRound map[
 		current.Round.Stage = domain.RoundStageReacting
 	}
 	var err error
+	progress.Preview.Phase = "reaction"
 	if len(progress.Reactions) == 0 {
-		progress.Reactions, _, err = runAgentPhase(ctx, command, current, "reaction", nil, nil)
+		progress.Reactions, _, err = runAgentPhase(ctx, command, current, "reaction", nil, nil, progress.Preview)
 		if err != nil {
 			return err
 		}
@@ -255,7 +262,8 @@ func processRound(ctx tw.Context, command workflow.Command, progressByRound map[
 		progress.Candidates = buildCandidates(current, progress.Reactions)
 	}
 	if len(progress.Rebuttals) == 0 {
-		_, progress.Rebuttals, err = runAgentPhase(ctx, command, current, "rebuttal", progress.Reactions, progress.Candidates)
+		progress.Preview.Phase = "rebuttal"
+		_, progress.Rebuttals, err = runAgentPhase(ctx, command, current, "rebuttal", progress.Reactions, progress.Candidates, progress.Preview)
 		if err != nil {
 			return err
 		}
@@ -281,9 +289,10 @@ func processRound(ctx tw.Context, command workflow.Command, progressByRound map[
 	if err = tw.ExecuteActivity(ctx, activitySetStage, command.GameID, command.RoundID, domain.RoundStatusRunning, domain.RoundStageWriting).Get(ctx, nil); err != nil {
 		return err
 	}
+	progress.Preview.Phase = "writing"
 	if progress.HistorianRecord == nil {
 		var record workflow.HistorianRecord
-		if err = tw.ExecuteActivity(ctx, activityHistorian, activitiesHistorianInput{Context: current, Reactions: progress.Reactions, Rebuttals: progress.Rebuttals, BeliefChanges: progress.BeliefProposals, Traditions: progress.TraditionChanges}).Get(ctx, &record); err != nil {
+		if err = modelActivity(ctx, command, progress.Preview, current.HistorianAgentID, "writing", activityHistorian, activitiesHistorianInput{Context: current, Reactions: progress.Reactions, Rebuttals: progress.Rebuttals, BeliefChanges: progress.BeliefProposals, Traditions: progress.TraditionChanges}, &record); err != nil {
 			return err
 		}
 		progress.HistorianRecord = &record
@@ -345,26 +354,60 @@ func stageForDescription(status string) domain.RoundStage {
 	return domain.RoundStageAwaitingClarityChoice
 }
 
-func runAgentPhase(ctx tw.Context, command workflow.Command, current workflow.RoundContext, phase string, reactions []workflow.AgentReaction, candidates []workflow.TraditionIdea) ([]workflow.AgentReaction, []workflow.AgentRebuttal, error) {
+func runAgentPhase(ctx tw.Context, command workflow.Command, current workflow.RoundContext, phase string, reactions []workflow.AgentReaction, candidates []workflow.TraditionIdea, preview *workflow.DebatePreview) ([]workflow.AgentReaction, []workflow.AgentRebuttal, error) {
 	type completed struct {
 		reaction *workflow.AgentReaction
 		rebuttal *workflow.AgentRebuttal
 	}
+	// Scope the patch to this command/phase. Replayed rounds keep the old wait
+	// order without pinning all future discoveries in a long-lived game to it.
+	version := tw.GetVersion(ctx, "agent-phase-live-preview/"+string(command.EventID)+"/"+phase, tw.DefaultVersion, 1)
+	retryVersion := tw.GetVersion(ctx, "model-rate-limit-agents/"+string(command.EventID)+"/"+phase, tw.DefaultVersion, 1)
 	futures := make([]tw.Future, 0, len(current.Agents))
 	for _, agent := range current.Agents {
 		requestID := StableTraditionID(command.GameID, command.RoundID, string(command.EventID)+"/"+string(agent.Agent.ID)+"/"+phase)
 		request := workflow.AgentRequest{RequestID: requestID, GameID: command.GameID, Agent: agent, RoundID: command.RoundID, RoundKind: current.Round.Kind, Observation: current.Observation, Traditions: current.Traditions, Phase: phase, Reactions: reactions, Candidates: candidates}
 		childID := workflow.AgentWorkflowID(command.GameID, agent.Agent.ID) + "/round/" + string(command.RoundID) + "/event/" + string(command.EventID) + "/" + phase
 		childCtx := tw.WithChildOptions(ctx, tw.ChildWorkflowOptions{WorkflowID: childID})
-		futures = append(futures, tw.ExecuteChildWorkflow(childCtx, workflow.AgentWorkflowName, request))
+		var future tw.Future = tw.ExecuteChildWorkflow(childCtx, workflow.AgentWorkflowName, request)
+		if retryVersion != tw.DefaultVersion {
+			future = retryAgentFuture(ctx, future, request, childID, preview)
+		}
+		futures = append(futures, future)
 	}
 	results := make([]completed, 0, len(futures))
-	for _, future := range futures {
-		var result workflow.AgentResult
-		if err := future.Get(ctx, &result); err != nil {
-			return nil, nil, err
+	if version == tw.DefaultVersion {
+		// Keep the original wait order when replaying existing workflow history.
+		for _, future := range futures {
+			var result workflow.AgentResult
+			if err := future.Get(ctx, &result); err != nil {
+				return nil, nil, err
+			}
+			publishDebateResult(preview, result)
+			results = append(results, completed{reaction: result.Reaction, rebuttal: result.Rebuttal})
 		}
-		results = append(results, completed{reaction: result.Reaction, rebuttal: result.Rebuttal})
+	} else {
+		selector := tw.NewSelector(ctx)
+		var phaseErr error
+		for _, future := range futures {
+			selector.AddFuture(future, func(ready tw.Future) {
+				var result workflow.AgentResult
+				if err := ready.Get(ctx, &result); err != nil {
+					if phaseErr == nil {
+						phaseErr = err
+					}
+					return
+				}
+				publishDebateResult(preview, result)
+				results = append(results, completed{reaction: result.Reaction, rebuttal: result.Rebuttal})
+			})
+		}
+		for range futures {
+			selector.Select(ctx)
+		}
+		if phaseErr != nil {
+			return nil, nil, phaseErr
+		}
 	}
 	reactionsOut := make([]workflow.AgentReaction, 0, 4)
 	rebuttalsOut := make([]workflow.AgentRebuttal, 0, 4)
@@ -416,12 +459,15 @@ func buildCandidates(current workflow.RoundContext, reactions []workflow.AgentRe
 	return items
 }
 
-func finalizeClosing(ctx tw.Context, command workflow.Command, current workflow.RoundContext) error {
+func finalizeClosing(ctx tw.Context, command workflow.Command, current workflow.RoundContext, preview *workflow.DebatePreview) error {
 	if err := tw.ExecuteActivity(ctx, activitySetStage, command.GameID, command.RoundID, domain.RoundStatusRunning, domain.RoundStageWriting).Get(ctx, nil); err != nil {
 		return err
 	}
 	var record workflow.HistorianRecord
-	if err := tw.ExecuteActivity(ctx, activityHistorian, activitiesHistorianInput{Context: current}).Get(ctx, &record); err != nil {
+	if preview != nil {
+		preview.Phase = "writing"
+	}
+	if err := modelActivity(ctx, command, preview, current.HistorianAgentID, "writing", activityHistorian, activitiesHistorianInput{Context: current}, &record); err != nil {
 		return err
 	}
 	chronicle := domain.Chronicle{ID: StableTraditionID(command.GameID, command.RoundID, "closing-chronicle"), GameID: command.GameID, RoundID: command.RoundID, HistorianAgentID: current.HistorianAgentID, Title: record.Title, Verdict: record.Verdict, Body: record.Body, Metadata: record.Metadata}
@@ -444,5 +490,5 @@ func closeGame(ctx tw.Context, command workflow.Command) error {
 	if err := tw.ExecuteActivity(ctx, activityLoadRound, command.GameID, command.RoundID).Get(ctx, &current); err != nil {
 		return err
 	}
-	return finalizeClosing(ctx, command, current)
+	return finalizeClosing(ctx, command, current, nil)
 }

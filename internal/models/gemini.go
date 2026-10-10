@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"reflect"
 	"strings"
 
@@ -28,7 +29,12 @@ func NewGemini(ctx context.Context, apiKey string) (*Gemini, error) {
 	if strings.TrimSpace(apiKey) == "" {
 		return nil, fmt.Errorf("GEMINI_API_KEY is required for the worker")
 	}
-	client, err := genai.NewClient(ctx, &genai.ClientConfig{APIKey: apiKey, Backend: genai.BackendGeminiAPI})
+	attempts := int32(1)
+	client, err := genai.NewClient(ctx, &genai.ClientConfig{
+		APIKey: apiKey, Backend: genai.BackendGeminiAPI,
+		HTTPClient:  &http.Client{Transport: rateLimitTransport{base: http.DefaultTransport}},
+		HTTPOptions: genai.HTTPOptions{RetryOptions: &genai.HTTPRetryOptions{Attempts: &attempts}},
+	})
 	if err != nil {
 		return nil, err
 	}

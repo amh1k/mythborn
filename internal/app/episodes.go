@@ -17,6 +17,13 @@ type EpisodeDetail struct {
 
 type Episodes struct{ Store *repository.Store }
 
+func (e Episodes) List(ctx context.Context, p auth.Principal, gameID domain.ID) ([]domain.Round, error) {
+	if _, err := gameAccess(ctx, e.Store, p, gameID); err != nil {
+		return nil, err
+	}
+	return e.Store.ListRounds(ctx, gameID)
+}
+
 func (e Episodes) Get(ctx context.Context, p auth.Principal, id domain.ID) (EpisodeDetail, error) {
 	round, err := e.Store.GetRound(ctx, id)
 	if err != nil {
