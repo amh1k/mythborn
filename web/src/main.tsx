@@ -2,10 +2,11 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from './auth'
+import { ThemeProvider } from './theme'
 import App from './app'
 import './styles/theme.css'
 import './styles/app.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode><BrowserRouter><AuthProvider><App /></AuthProvider></BrowserRouter></React.StrictMode>,
+  <React.StrictMode><ThemeProvider><BrowserRouter><AuthProvider><App /></AuthProvider></BrowserRouter></ThemeProvider></React.StrictMode>,
 )

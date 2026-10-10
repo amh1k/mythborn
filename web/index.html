@@ -3,9 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f5f0e5" />
-    <meta name="description" content="A living field journal for the worlds you discover." />
-    <title>Mythborn — A living field journal</title>
+    <meta name="theme-color" content="#f3f0e9" />
+    <link rel="icon" type="image/svg+xml" href="/brand/mythborn-mark.svg" />
+    <script>
+      // Apply the theme before the stylesheet loads to avoid a light flash.
+      (() => {
+        let saved;
+        try { saved = localStorage.getItem('mythborn-theme'); } catch {}
+        const theme = saved === 'light' || saved === 'dark' ? saved :
+          (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.dataset.theme = theme;
+        document.querySelector('meta[name="theme-color"]').content = theme === 'dark' ? '#101820' : '#f3f0e9';
+      })();
+    </script>
+    <meta name="description" content="Shape a civilization through discoveries, competing beliefs, and living mythology." />
+    <title>Mythborn — Build a living mythology</title>
   </head>
   <body>
     <div id="root"></div>

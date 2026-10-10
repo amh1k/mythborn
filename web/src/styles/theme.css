@@ -1,22 +1,29 @@
-/* Mythborn visual foundation: field journal, archive, and living mythology. */
+@font-face { font-family: "Almendra"; font-style: normal; font-weight: 400; font-display: swap; src: url('/fonts/almendra-regular.ttf') format('truetype'); }
+@font-face { font-family: "Almendra"; font-style: normal; font-weight: 700; font-display: swap; src: url('/fonts/almendra-bold.ttf') format('truetype'); }
+@font-face { font-family: "Almendra"; font-style: italic; font-weight: 400; font-display: swap; src: url('/fonts/almendra-italic.ttf') format('truetype'); }
+@font-face { font-family: "Uncial Antiqua"; font-style: normal; font-weight: 400; font-display: swap; src: url('/fonts/uncial-antiqua.ttf') format('truetype'); }
+@font-face { font-family: "DM Sans"; font-style: normal; font-weight: 400; font-display: swap; src: url('/fonts/dm-sans-regular.ttf') format('truetype'); }
+@font-face { font-family: "DM Sans"; font-style: normal; font-weight: 600; font-display: swap; src: url('/fonts/dm-sans-semibold.ttf') format('truetype'); }
+
+/* Mythborn: illustrated mythology, ink, stone, and vermilion. */
 
 :root {
   color-scheme: light;
 
   /* Core palette */
-  --color-ink: #202820;
-  --color-ink-muted: #596258;
-  --color-paper: #f5f0e5;
-  --color-paper-raised: #fffdf7;
-  --color-paper-deep: #e8dfcd;
-  --color-line: #d4cbb9;
-  --color-moss: #465d45;
-  --color-moss-dark: #304632;
-  --color-moss-soft: #e6ecdf;
-  --color-copper: #9a542f;
-  --color-copper-dark: #773d22;
-  --color-copper-soft: #f2e5d9;
-  --color-sky: #315e70;
+  --color-ink: #202932;
+  --color-ink-muted: #5c6269;
+  --color-paper: #f3f0e9;
+  --color-paper-raised: #faf8f3;
+  --color-paper-deep: #e8e3d8;
+  --color-line: #d0cec5;
+  --color-moss: #ad3f2c;
+  --color-moss-dark: #8a3022;
+  --color-moss-soft: #f3e6df;
+  --color-copper: #ad3f2c;
+  --color-copper-dark: #8a3022;
+  --color-copper-soft: #f3e6df;
+  --color-sky: #354e62;
   --color-danger: #a43f36;
   --color-danger-soft: #f8e7e2;
   --color-success: #315b42;
@@ -26,29 +33,43 @@
   /* Semantic surfaces and text */
   --surface-page: var(--color-paper);
   --surface-card: var(--color-paper-raised);
-  --surface-subtle: #eee8db;
-  --surface-inverse: #222b24;
+  --surface-subtle: #eeebe3;
+  --surface-inverse: #152330;
   --text-primary: var(--color-ink);
   --text-secondary: var(--color-ink-muted);
-  --text-inverse: #fffdf7;
+  --text-inverse: #faf8f3;
   --border-subtle: var(--color-line);
   --accent-primary: var(--color-moss);
   --accent-primary-hover: var(--color-moss-dark);
   --accent-secondary: var(--color-copper);
+  --control-border: #aaa28f;
+  --selection-background: #eac8b7;
+  --status-active-border: #9aaf8e;
+  --status-active-text: #29422e;
+  --status-success-border: #a4bea9;
+  --status-success-text: #254a34;
+  --status-danger-border: #d7a89a;
+  --status-danger-text: #762e27;
+  --color-danger-action: #a43f36;
+  --color-danger-action-hover: #843129;
+  --agent-scientist: #354e62;
+  --agent-soldier: #765c2b;
+  --agent-historian: #8a3022;
 
   /* Typography */
-  --font-body: "Avenir Next", Avenir, "Segoe UI", sans-serif;
-  --font-display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  --font-body: "DM Sans", "Segoe UI", sans-serif;
+  --font-title: "Uncial Antiqua", Georgia, serif;
+  --font-display: "Almendra", Georgia, serif;
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-base: 1rem;
   --text-lg: 1.125rem;
   --text-xl: 1.375rem;
-  --text-2xl: clamp(1.65rem, 4vw, 2.25rem);
-  --text-3xl: clamp(2.1rem, 6vw, 3.5rem);
-  --line-body: 1.6;
-  --line-heading: 1.15;
+  --text-2xl: clamp(1.8rem, 3vw, 2.4rem);
+  --text-3xl: clamp(2rem, 4vw, 3.25rem);
+  --line-body: 1.65;
+  --line-heading: 1.2;
 
   /* Spacing, shape, and depth */
   --space-1: 0.25rem;
@@ -61,13 +82,13 @@
   --space-10: 2.5rem;
   --space-12: 3rem;
   --space-16: 4rem;
-  --radius-sm: 0.4rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1.15rem;
-  --radius-pill: 999px;
-  --shadow-card: 0 10px 28px rgb(44 39 27 / 7%), 0 1px 2px rgb(44 39 27 / 5%);
-  --shadow-raised: 0 16px 42px rgb(28 37 29 / 15%), 0 2px 8px rgb(28 37 29 / 8%);
-  --content-width: 72rem;
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 3px;
+  --radius-pill: 2px;
+  --shadow-card: none;
+  --shadow-raised: 0 5px 18px rgb(21 35 48 / 8%);
+  --content-width: 80rem;
   --reading-width: 44rem;
   --control-height: 2.875rem;
 
@@ -81,6 +102,43 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-ink: #e9e3d8;
+  --color-ink-muted: #aeb8c0;
+  --color-paper: #101820;
+  --color-paper-raised: #18232c;
+  --color-paper-deep: #22313c;
+  --color-line: #394956;
+  --color-moss: #eea07d;
+  --color-moss-dark: #f6bc9d;
+  --color-moss-soft: #352820;
+  --color-copper: #eea07d;
+  --color-copper-dark: #f6bc9d;
+  --color-copper-soft: #352820;
+  --color-sky: #a6c9e2;
+  --color-danger: #f0a79c;
+  --color-danger-soft: #352323;
+  --color-success: #a8cfb3;
+  --color-success-soft: #22352d;
+  --color-focus: #8accec;
+  --surface-subtle: #1c2933;
+  --accent-primary: #ad3f2c;
+  --accent-primary-hover: #943523;
+  --control-border: #61717e;
+  --selection-background: #65402e;
+  --status-active-border: #7a8c70;
+  --status-active-text: #c8d9b9;
+  --status-success-border: #668a74;
+  --status-success-text: #b2ddbf;
+  --status-danger-border: #a06d65;
+  --status-danger-text: #f2b5a9;
+  --agent-scientist: #a6c9e2;
+  --agent-soldier: #dfc08a;
+  --agent-historian: #eea07d;
+  --shadow-raised: 0 5px 18px rgb(0 0 0 / 25%);
 }
 
 *,
@@ -163,12 +221,12 @@ h6 {
   margin: 0 0 var(--space-4);
   color: var(--text-primary);
   font-family: var(--font-display);
-  font-weight: 600;
+  font-weight: 700;
   line-height: var(--line-heading);
   text-wrap: balance;
 }
 
-h1 { font-size: var(--text-3xl); }
+h1 { font-family: var(--font-title); font-size: var(--text-3xl); font-weight: 400; letter-spacing: .01em; }
 h2 { font-size: var(--text-2xl); }
 h3 { font-size: var(--text-xl); }
 h4 { font-size: var(--text-lg); }
@@ -205,7 +263,7 @@ a:hover {
 
 ::selection {
   color: var(--text-primary);
-  background: #d5dfc9;
+  background: var(--selection-background);
 }
 
 .skip-link {
@@ -256,7 +314,7 @@ a:hover {
   text-transform: uppercase;
 }
 
-/* Buttons remain high-contrast and large enough for touch use outdoors. */
+/* Controls retain visible focus and touch-sized targets. */
 .button {
   display: inline-flex;
   min-height: var(--control-height);
@@ -267,8 +325,8 @@ a:hover {
   border: 1px solid transparent;
   border-radius: var(--radius-md);
   background: var(--accent-primary);
-  color: #fffdf7;
-  font-weight: 650;
+  color: #faf8f3;
+  font-weight: 600;
   line-height: 1.2;
   text-align: center;
   text-decoration: none;
@@ -278,7 +336,7 @@ a:hover {
 
 .button:hover:not(:disabled) {
   background: var(--accent-primary-hover);
-  color: #fffdf7;
+  color: #faf8f3;
 }
 
 .button:active:not(:disabled) {
@@ -305,7 +363,7 @@ a:hover {
 
 .button-quiet {
   background: transparent;
-  color: var(--accent-primary);
+  color: var(--accent-secondary);
 }
 
 .button-quiet:hover:not(:disabled) {
@@ -314,11 +372,11 @@ a:hover {
 }
 
 .button-danger {
-  background: var(--color-danger);
+  background: var(--color-danger-action);
 }
 
 .button-danger:hover:not(:disabled) {
-  background: #843129;
+  background: var(--color-danger-action-hover);
 }
 
 /* Native form styles provide a consistent baseline without hiding semantics. */
@@ -328,7 +386,7 @@ label,
   margin-bottom: var(--space-2);
   color: var(--text-primary);
   font-size: var(--text-sm);
-  font-weight: 650;
+  font-weight: 600;
 }
 
 input:not([type="checkbox"]):not([type="radio"]),
@@ -337,7 +395,7 @@ textarea {
   width: 100%;
   min-height: var(--control-height);
   padding: 0.7rem 0.8rem;
-  border: 1px solid #aaa28f;
+  border: 1px solid var(--control-border);
   border-radius: var(--radius-sm);
   background: var(--color-paper-raised);
   color: var(--text-primary);
@@ -394,26 +452,26 @@ input[type="radio"] {
   background: var(--surface-subtle);
   color: var(--text-primary);
   font-size: var(--text-xs);
-  font-weight: 650;
+  font-weight: 600;
   line-height: 1.2;
 }
 
 .status-pill[data-state="active"] {
-  border-color: #9aaf8e;
+  border-color: var(--status-active-border);
   background: var(--color-moss-soft);
-  color: #29422e;
+  color: var(--status-active-text);
 }
 
 .status-pill[data-state="complete"] {
-  border-color: #a4bea9;
+  border-color: var(--status-success-border);
   background: var(--color-success-soft);
-  color: #254a34;
+  color: var(--status-success-text);
 }
 
 .status-pill[data-state="attention"] {
-  border-color: #d7a89a;
+  border-color: var(--status-danger-border);
   background: var(--color-danger-soft);
-  color: #762e27;
+  color: var(--status-danger-text);
 }
 
 @media (max-width: 40rem) {
