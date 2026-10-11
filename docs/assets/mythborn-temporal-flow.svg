@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">A Mythborn discovery through Temporal</title>
+  <desc id="desc">A submitted photo becomes a durable round and outbox event. The dispatcher starts the Temporal coordinator, which runs four agent workflows concurrently through reaction and rebuttal phases, asks the Historian activity for a chronicle, and commits the result atomically to Tiger Data.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 10 5 0 10Z" fill="#b98645"/></marker>
+    <style>
+      .bg{fill:#f7f2e9}.title{font:700 27px Georgia,serif;fill:#27231f}.sub{font:14px Arial,sans-serif;fill:#6d665d}.card{fill:#fffdf8;stroke:#d8c9b4;stroke-width:1.5}.dark{fill:#302b27}.gold{fill:#f3e5cf;stroke:#bd925d;stroke-width:1.5}.h{font:700 16px Arial,sans-serif;fill:#302b27}.lh{fill:#fffaf1}.p{font:13px Arial,sans-serif;fill:#625b53}.small{font:12px Arial,sans-serif;fill:#746c62}.num{font:700 13px Arial,sans-serif;fill:#fffaf1}.numc{fill:#a8783c}.line{fill:none;stroke:#b98645;stroke-width:2.2;marker-end:url(#arrow)}.dash{fill:none;stroke:#b98645;stroke-width:2;stroke-dasharray:6 6}.divider{stroke:#e4d9c9;stroke-width:1}
+    </style>
+  </defs>
+  <rect class="bg" width="1200" height="720" rx="22"/>
+  <text class="title" x="48" y="55">A DISCOVERY THROUGH TEMPORAL</text>
+  <text class="sub" x="48" y="82">One round moves through durable steps; four agent workflows can work in parallel.</text>
+
+  <path class="line" d="M260 205H330"/><path class="line" d="M540 205H610"/><path class="line" d="M820 205H890"/>
+  <rect class="card" x="50" y="145" width="210" height="120" rx="16"/>
+  <circle class="numc" cx="76" cy="171" r="14"/><text class="num" x="72" y="176">1</text>
+  <text class="h" x="72" y="207">Player submits</text><text class="p" x="72" y="231">A discovery photo and</text><text class="p" x="72" y="250">optional testimony</text>
+  <rect class="card" x="330" y="145" width="210" height="120" rx="16"/>
+  <circle class="numc" cx="356" cy="171" r="14"/><text class="num" x="352" y="176">2</text>
+  <text class="h" x="352" y="207">Go API records it</text><text class="p" x="352" y="231">Round + outbox event</text><text class="p" x="352" y="250">saved in one transaction</text>
+  <rect class="card" x="610" y="145" width="210" height="120" rx="16"/>
+  <circle class="numc" cx="636" cy="171" r="14"/><text class="num" x="632" y="176">3</text>
+  <text class="h" x="632" y="207">Dispatcher delivers</text><text class="p" x="632" y="231">Claims the outbox event</text><text class="p" x="632" y="250">and starts or signals work</text>
+  <rect class="dark" x="890" y="145" width="260" height="120" rx="16"/>
+  <circle cx="916" cy="171" r="14" fill="#bd925d"/><text class="num" x="912" y="176">4</text>
+  <text class="h lh" x="938" y="207">Temporal coordinator</text><text class="p lh" x="938" y="231">Owns phase order and</text><text class="p lh" x="938" y="250">records workflow history</text>
+
+  <path class="line" d="M1020 265V325"/>
+  <rect class="gold" x="160" y="325" width="880" height="174" rx="20"/>
+  <text class="h" x="190" y="360">5 · Four agent child workflows run concurrently</text>
+  <text class="small" x="190" y="383">Each calls a worker activity, receives validated output, and reports completion to the coordinator.</text>
+  <rect class="card" x="190" y="410" width="165" height="62" rx="12"/><text class="h" x="214" y="437">Priest</text><text class="small" x="214" y="458">reaction → rebuttal</text>
+  <rect class="card" x="385" y="410" width="165" height="62" rx="12"/><text class="h" x="409" y="437">Scientist</text><text class="small" x="409" y="458">reaction → rebuttal</text>
+  <rect class="card" x="580" y="410" width="165" height="62" rx="12"/><text class="h" x="604" y="437">Soldier</text><text class="small" x="604" y="458">reaction → rebuttal</text>
+  <rect class="card" x="775" y="410" width="235" height="62" rx="12"/><text class="h" x="799" y="437">Historian</text><text class="small" x="799" y="458">contributes in both phases</text>
+  <path class="line" d="M600 499V550"/>
+  <rect class="card" x="270" y="550" width="280" height="105" rx="16"/>
+  <circle class="numc" cx="296" cy="576" r="14"/><text class="num" x="292" y="581">6</text>
+  <text class="h" x="320" y="584">Historian writes</text><text class="p" x="294" y="612">A chronicle from the debate</text><text class="p" x="294" y="634">and proposed lasting changes</text>
+  <path class="line" d="M550 602H650"/>
+  <rect class="dark" x="650" y="550" width="280" height="105" rx="16"/>
+  <circle cx="676" cy="576" r="14" fill="#bd925d"/><text class="num" x="672" y="581">7</text>
+  <text class="h lh" x="700" y="584">Atomic commit</text><text class="p lh" x="674" y="612">Chronicle, beliefs, and culture</text><text class="p lh" x="674" y="634">are saved together in Tiger Data</text>
+  <line class="divider" x1="48" y1="681" x2="1152" y2="681"/>
+  <text class="small" x="48" y="703">The player polls the API for progress; Temporal and the worker handle long-running agent work.</text>
+</svg>

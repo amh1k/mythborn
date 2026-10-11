@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="690" viewBox="0 0 1200 690" role="img" aria-labelledby="title desc">
+  <title id="title">Mythborn service architecture</title>
+  <desc id="desc">Vercel serves the React app. The browser uses Supabase Auth and calls the Go API. Railway runs the API, outbox dispatcher, Temporal server, and Go worker. Tiger Data stores game data and separate Temporal history; Supabase Storage keeps photos, and Gemini provides model inference.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 10 5 0 10Z" fill="#b98645"/></marker>
+    <marker id="arrow-muted" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 10 5 0 10Z" fill="#837b72"/></marker>
+    <style>
+      .bg{fill:#f7f2e9}.title{font:700 27px Georgia,serif;fill:#27231f}.sub{font:14px Arial,sans-serif;fill:#6d665d}.rail{fill:#eee5d7;stroke:#c9b89f;stroke-width:2;stroke-dasharray:8 7}.card{fill:#fffdf8;stroke:#d8c9b4;stroke-width:1.5}.dark{fill:#302b27;stroke:#302b27}.gold{fill:#f3e5cf;stroke:#bd925d;stroke-width:1.5}.h{font:700 16px Arial,sans-serif;fill:#302b27}.light{fill:#fffaf1}.p{font:13px Arial,sans-serif;fill:#625b53}.tiny{font:11px Arial,sans-serif;fill:#746c62}.line{fill:none;stroke:#b98645;stroke-width:2.2;marker-end:url(#arrow)}.muteline{fill:none;stroke:#837b72;stroke-width:1.8;marker-end:url(#arrow-muted)}.lab{font:11px Arial,sans-serif;fill:#73695d}
+    </style>
+  </defs>
+  <rect class="bg" width="1200" height="690" rx="22"/>
+  <text class="title" x="48" y="55">MYTHBORN / SERVICE ARCHITECTURE</text>
+  <text class="sub" x="48" y="81">The browser reaches the API; durable agent work stays on the server.</text>
+
+  <rect class="rail" x="345" y="120" width="510" height="470" rx="22"/>
+  <text class="h" x="370" y="151">RAILWAY · ONE SERVICE</text>
+
+  <rect class="card" x="48" y="170" width="238" height="104" rx="15"/>
+  <text class="h" x="70" y="202">React app</text><text class="p" x="70" y="226">Vercel · sign-in and game UI</text><text class="tiny" x="70" y="249">Polls the API for round progress</text>
+  <rect class="gold" x="48" y="350" width="238" height="84" rx="15"/>
+  <text class="h" x="70" y="382">Supabase Auth</text><text class="p" x="70" y="406">Identity and sign-in sessions</text>
+  <rect class="card" x="48" y="510" width="238" height="92" rx="15"/>
+  <text class="h" x="70" y="544">Supabase Storage</text><text class="p" x="70" y="568">Private discovery photos</text>
+
+  <rect class="card" x="375" y="185" width="205" height="100" rx="15"/>
+  <text class="h" x="398" y="218">Go API</text><text class="p" x="398" y="242">Auth checks · commands</text><text class="p" x="398" y="263">Photo access · reads</text>
+  <rect class="card" x="375" y="385" width="205" height="92" rx="15"/>
+  <text class="h" x="398" y="418">Outbox dispatcher</text><text class="p" x="398" y="443">Starts or signals workflows</text>
+  <rect class="dark" x="620" y="185" width="205" height="100" rx="15"/>
+  <text class="h light" x="643" y="218">Temporal server</text><text class="p light" x="643" y="242">Coordinator and timers</text><text class="p light" x="643" y="263">Durable execution history</text>
+  <rect class="card" x="620" y="385" width="205" height="92" rx="15"/>
+  <text class="h" x="643" y="418">Go worker</text><text class="p" x="643" y="443">Workflows · model and DB activities</text>
+
+  <rect class="gold" x="910" y="155" width="240" height="100" rx="15"/>
+  <text class="h" x="934" y="190">Tiger Data</text><text class="p" x="934" y="215">Game state · memories · outbox</text>
+  <rect class="gold" x="910" y="315" width="240" height="90" rx="15"/>
+  <text class="h" x="934" y="350">Tiger Data</text><text class="p" x="934" y="375">Separate Temporal schemas</text>
+  <rect class="card" x="910" y="475" width="240" height="92" rx="15"/>
+  <text class="h" x="934" y="509">Gemini API</text><text class="p" x="934" y="534">Gemma inference and embeddings</text>
+
+  <path class="line" d="M286 220H375"/><text class="lab" x="296" y="208">JWT + requests</text>
+  <path class="muteline" d="M167 274V350"/><text class="lab" x="179" y="318">sign-in</text>
+  <path class="muteline" d="M375 260H320V556H286"/><text class="lab" x="300" y="540">photo upload</text>
+  <path class="line" d="M477 285V385"/><text class="lab" x="486" y="340">event</text>
+  <path class="line" d="M580 430H600V235H620"/><text class="lab" x="584" y="415">dispatch</text>
+  <path class="line" d="M722 285V385"/><text class="lab" x="731" y="340">tasks</text>
+  <path class="line" d="M580 198V160H875V175H910"/><text class="lab" x="690" y="157">game records</text>
+  <path class="muteline" d="M825 230H875V360H910"/><text class="lab" x="832" y="349">workflow history</text>
+  <path class="line" d="M825 430H870V240H910"/><text class="lab" x="831" y="418">state and memories</text>
+  <path class="line" d="M825 450H875V520H910"/><text class="lab" x="830" y="504">model calls</text>
+  <path class="muteline" d="M620 462H595V625H300V556H286"/><text class="lab" x="430" y="616">private photo read</text>
+</svg>
