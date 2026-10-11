@@ -1,9 +1,37 @@
 # Configure secrets and origins before deployment. See DEPLOYMENT.md.
 services:
+  - type: pserv
+    name: mythborn-temporal
+    runtime: docker
+    region: singapore
+    plan: 1c-2g
+    dockerfilePath: ./deploy/temporal/Dockerfile
+    dockerContext: .
+    preDeployCommand: /etc/mythborn/setup.sh
+    numInstances: 1
+    maxShutdownDelaySeconds: 120
+    envVars:
+      - key: SQL_HOST
+        fromDatabase:
+          name: mythborn-temporal-db
+          property: host
+      - key: SQL_PORT
+        value: '5432'
+      - key: SQL_USER
+        fromDatabase:
+          name: mythborn-temporal-db
+          property: user
+      - key: SQL_PASSWORD
+        fromDatabase:
+          name: mythborn-temporal-db
+          property: password
+      - key: GOMEMLIMIT
+        value: 1700MiB
   - type: web
     name: mythborn-api
     runtime: docker
-    plan: starter
+    region: singapore
+    plan: 0.5c-512mb
     dockerfilePath: ./Dockerfile
     dockerContext: .
     dockerCommand: /mythborn-api
@@ -17,17 +45,21 @@ services:
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
       - key: TEMPORAL_ADDRESS
-        sync: false
+        fromService:
+          type: pserv
+          name: mythborn-temporal
+          property: hostport
       - key: TEMPORAL_NAMESPACE
-        sync: false
+        value: default
       - key: TEMPORAL_API_KEY
-        sync: false
+        value: ''
       - key: CORS_ALLOWED_ORIGINS
-        sync: false
+        value: https://mythborn.vercel.app,https://mythborn-abdulmoizx97-gmailcoms-projects.vercel.app,https://mythborn-git-main-abdulmoizx97-gmailcoms-projects.vercel.app,http://localhost:5173
   - type: worker
     name: mythborn-worker
     runtime: docker
-    plan: starter
+    region: singapore
+    plan: 0.5c-512mb
     dockerfilePath: ./Dockerfile
     dockerContext: .
     dockerCommand: /mythborn-worker
@@ -41,13 +73,24 @@ services:
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
       - key: TEMPORAL_ADDRESS
-        sync: false
+        fromService:
+          type: pserv
+          name: mythborn-temporal
+          property: hostport
       - key: TEMPORAL_NAMESPACE
-        sync: false
+        value: default
       - key: TEMPORAL_API_KEY
-        sync: false
+        value: ''
       - key: GEMINI_API_KEY
         sync: false
+databases:
+  - name: mythborn-temporal-db
+    databaseName: temporal
+    postgresMajorVersion: '17'
+    region: singapore
+    plan: 0.1c-256mb
+    diskSizeGB: 1
+    ipAllowList: []
 envVarGroups:
   - name: mythborn-runtime
     envVars:

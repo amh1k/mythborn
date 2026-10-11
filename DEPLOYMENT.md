@@ -1,16 +1,31 @@
 # Hosted release setup
 
-`render.yaml` defines the Go API and one Go worker. The frontend is deployed
+`render.yaml` defines the Go API, one Go worker, a private Temporal server,
+and a small PostgreSQL instance dedicated to Temporal. The frontend is deployed
 separately from `web/` on Vercel. The worker needs one always-on instance because
 it dispatches the Tiger outbox and polls Temporal. The Blueprint deliberately
-leaves credentials as unsynced variables. It does not create a database: Tiger
-Cloud remains the application database and Temporal Cloud retains workflow
-history.
+leaves application credentials as unsynced variables. Tiger
+Cloud remains the application database. Render Postgres stores only Temporal's
+execution and visibility history, in `temporal` and `temporal_visibility` databases.
+All four Render resources use Singapore so the API and worker can reach Temporal
+over the private network. The initial always-on compute budget is approximately
+$45/month ($7 API, $7 worker, $25 Temporal, $6 workflow database), plus PostgreSQL
+storage and applicable usage. These plans do not provide high availability.
 
 The root `Dockerfile` runs the Go test suite during the image build, compiles
 both Go services, and packages them in a small non-root runtime image. Render
 starts the same image with `/mythborn-api` or `/mythborn-worker`. The frontend is
 not included in that image.
+
+`deploy/temporal/Dockerfile` pins the real Temporal 1.32.0 server and matching
+admin tools by image digest. Its pre-deploy command applies Temporal's own
+PostgreSQL schemas idempotently; these are separate from Goose's game migrations.
+The server starts all four Temporal services in one process and creates the
+`default` namespace with seven-day retention after startup. It uses bounded SQL
+connection pools. No public Temporal UI, gRPC endpoint, or database access is
+enabled. Trusted services on this Render workspace's private network can access
+Temporal without an API key. Never turn this private service into a public web
+service without configuring Temporal authentication and TLS.
 
 ## Local Docker run
 
@@ -33,9 +48,9 @@ docker compose up --build
 
 The API is at `http://localhost:8080`, and the local Temporal UI is at
 `http://localhost:8233`. The Temporal development server keeps its local state
-in a Docker volume. This is for local development; the Render services should
-connect to Temporal Cloud or a separately operated production Temporal service,
-not run the development server in the application container. Start the Vite
+in a Docker volume. This is for local development; Render uses the production
+server image with its own PostgreSQL persistence, not the development server.
+Start the Vite
 frontend separately with `cd web && npm ci && npm run dev` when needed.
 
 The `temporal-volume-init` service gives the Temporal user ownership of the
@@ -59,10 +74,12 @@ volume when restarting so its workflow history survives.
    psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f seeds/founding_agents.sql
    ```
 
-2. Create a Temporal Cloud namespace and API key. Set the namespace endpoint,
-   namespace name, and API key in each service’s own `sync: false` fields. Do not put these secrets in
-   `mythborn-runtime`: Render environment groups cannot request secret values. The clients enable TLS when the API key is
-   configured. Local Temporal continues to use an empty API key.
+2. Deploy `mythborn-temporal-db` and `mythborn-temporal`. The Blueprint supplies
+   the database credentials to Temporal and supplies its private `hostport` to
+   the API and worker automatically. Use namespace `default` and an empty
+   `TEMPORAL_API_KEY` on this private network. The database's public IP allowlist
+   is empty. Temporal's schema setup runs as the private service's pre-deploy
+   command, before the server starts.
 3. Configure Supabase Auth providers and redirect URLs, create the private
    `mythborn-photos` bucket, and set its server-only service role key in Render.
    Configure CORS to the exact Vercel production origin (and preview origin if
@@ -81,6 +98,15 @@ volume when restarting so its workflow history survives.
    client-side paths back through the SPA entry point. Add both local and hosted
    OAuth callback URLs in Supabase. Run the first-admin SQL statement in
    `README.md` for an account you control.
+
+Before starting the Render worker against an existing Tiger database, stop the
+local worker: `docker compose stop worker`. Two workers connected to different
+Temporal servers must not claim the same Tiger outbox. Local SQLite workflow
+histories are not copied to the hosted PostgreSQL server. Completed chronicles
+and game records remain in Tiger. Finish or explicitly recover unfinished local
+rounds before cutover; new commands start coordinators on the hosted server via
+the existing Signal-With-Start dispatcher. Do not delete the local Temporal
+volume during this transition.
 
 The API readiness endpoint requires Tiger Cloud access. Confirm the API reports
 ready, the worker connects to Temporal and claims an outbox command, and the
