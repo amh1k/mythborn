@@ -1,0 +1,18 @@
+# Local HyperFrames state, tool downloads, and generated exports
+.hyperframes/
+.thumbnails/
+.media/
+renders/
+snapshots/
+
+# Early capture iterations retained locally for reference
+capture/
+capture-live/
+capture-civilization/
+capture-discovery/
+capture-founding/
+capture-episode-final/
+
+# CLI extraction metadata is not needed to render the film
+capture-home-final/extracted/
+capture-civ-final/extracted/
