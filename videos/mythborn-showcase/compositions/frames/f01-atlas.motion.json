@@ -1,0 +1,10 @@
+{
+  "duration": 8,
+  "assertions": [
+    {
+      "kind": "keepsMoving",
+      "withinSelector": "#root-f01-atlas",
+      "maxStaticSec": 1.5
+    }
+  ]
+}

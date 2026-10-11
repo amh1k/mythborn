@@ -1,0 +1,10 @@
+{
+  "duration": 9.45,
+  "assertions": [
+    {
+      "kind": "keepsMoving",
+      "withinSelector": "#root-f02-founding",
+      "maxStaticSec": 1.5
+    }
+  ]
+}

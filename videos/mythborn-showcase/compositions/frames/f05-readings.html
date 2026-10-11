@@ -1,0 +1,140 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>One tower, four readings</title></head><body><template>
+    <style>
+    @font-face { font-family: Almendra; src: url("assets/fonts/almendra-regular.ttf") format("truetype"); font-weight: 400; }
+    @font-face { font-family: Almendra; src: url("assets/fonts/almendra-bold.ttf") format("truetype"); font-weight: 700; }
+    @font-face { font-family: Uncial; src: url("assets/fonts/uncial-antiqua.ttf") format("truetype"); font-weight: 400; }
+    @font-face { font-family: DM; src: url("assets/fonts/dm-sans-regular.ttf") format("truetype"); font-weight: 400; }
+    @font-face { font-family: DM; src: url("assets/fonts/dm-sans-semibold.ttf") format("truetype"); font-weight: 600; }
+    #root-f05-readings { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; color: #202932; }
+    #root-f05-readings * { box-sizing: border-box; }
+    #root-f05-readings .intro, #root-f05-readings .product { position: absolute; inset: 0; width: 100%; height: 100%; background: #f3f0e9; }
+    #root-f05-readings .intro { z-index: 3; transform-origin: left center; }
+    #root-f05-readings .intro-kicker { position: absolute; top: 196px; left: 112px; color: #ad3f2c; font: 600 24px/1.3 DM, sans-serif; letter-spacing: .12em; }
+    #root-f05-readings h1 { position: absolute; top: 286px; left: 106px; width: 1690px; margin: 0; font: 700 152px/.99 Almendra, Georgia, serif; letter-spacing: -.025em; }
+    #root-f05-readings .type-line { display: block; white-space: nowrap; }
+    #root-f05-readings .accent { color: #ad3f2c; }
+    #root-f05-readings .word-mask { display: inline-block; overflow: hidden; vertical-align: bottom; line-height: 1.12; }
+    #root-f05-readings .title-word, #root-f05-readings .body-word { display: inline-block; transform-origin: left bottom; will-change: transform; }
+    #root-f05-readings .intro-body { position: absolute; left: 112px; top: 726px; width: 1530px; margin: 0; color: #354e62; font: 400 36px/1.35 DM, sans-serif; }
+    #root-f05-readings .intro--compact h1 { font-size: 128px; }
+    #root-f05-readings .intro--photo h1, #root-f05-readings .intro--roles h1 { width: 1010px; font-size: 132px; }
+    #root-f05-readings .intro--photo .intro-body, #root-f05-readings .intro--roles .intro-body { width: 940px; }
+    #root-f05-readings .photo-prop { position: absolute; left: 1080px; top: 252px; width: 740px; height: 556px; overflow: hidden; }
+    #root-f05-readings .photo-prop img { width: 100%; height: 100%; object-fit: cover; transform-origin: center; }
+    #root-f05-readings .role-list { position: absolute; left: 1290px; top: 306px; width: 540px; font: 400 67px/1.46 Almendra, Georgia, serif; }
+    #root-f05-readings .role:nth-child(even) { color: #ad3f2c; }
+    #root-f05-readings .product { z-index: 1; overflow: hidden; }
+    #root-f05-readings .surface { position: absolute; inset: 0; overflow: hidden; width: 1150px; }
+    #root-f05-readings .camera { position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; transform-origin: 0 0; will-change: transform; }
+    #root-f05-readings .screen { display: block; width: 1920px; height: auto; clip-path: inset(0 16px 0 0); }
+    #root-f05-readings .annotation { position: absolute; z-index: 2; left: 1240px; top: 288px; width: 560px; }
+    #root-f05-readings .annotation-label { color: #ad3f2c; font: 600 22px/1.4 DM, sans-serif; letter-spacing: .09em; }
+    #root-f05-readings h2 { margin: 28px 0 0; font: 700 76px/1.04 Almendra, Georgia, serif; letter-spacing: -.025em; }
+    #root-f05-readings .annotation p { margin: 26px 0 0; color: #354e62; font: 400 31px/1.4 DM, sans-serif; }
+    #root-f05-readings .annotation .type-line { white-space: normal; }
+    #root-f05-readings .annotation .type-line:last-child { color: #ad3f2c; }
+    #root-f05-readings .cursor { position: absolute; z-index: 5; top: -1.875px; left: -1.895px; width: 24px; height: 30px; opacity: 0; transform-origin: 1.895px 1.875px; }
+    #root-f05-readings .cursor svg { display: block; width: 100%; height: 100%; }
+    #root-f05-readings .ripple { position: absolute; z-index: 4; top: 0; left: 0; width: 38px; height: 38px; margin: -19px 0 0 -19px; border: 2px solid #ad3f2c; border-radius: 50%; opacity: 0; }
+    #root-f05-readings .close { position: absolute; z-index: 5; inset: 0; background: #152330; color: #faf8f3; }
+    #root-f05-readings .close-lockup { position: absolute; left: 112px; top: 150px; display: flex; align-items: center; gap: 24px; font: 400 70px/1.1 Uncial, Georgia, serif; }
+    #root-f05-readings .close-lockup img { width: 76px; height: 76px; filter: brightness(0) invert(1); }
+    #root-f05-readings .close h1 { top: 338px; width: 1650px; font-size: 156px; }
+    #root-f05-readings .close .accent { color: #e6bc7a; }
+    #root-f05-readings .close p { position: absolute; top: 800px; left: 112px; width: 1480px; margin: 0; color: #e6bc7a; font: 400 34px/1.4 DM, sans-serif; }
+  </style>
+    <div id="root-f05-readings" data-composition-id="f05-readings" data-width="1920" data-height="1080" data-duration="10.45" data-no-timeline>
+      <div class="product" id="f05-readings-product">
+        <div class="surface"><div class="camera" id="f05-readings-camera" data-layout-allow-overflow><img class="screen" id="f05-readings-screen" src="capture-polish/05-agent-debate.png" alt="Actual first-reaction UI populated by the local demo fixture" width="1920" height="1818" loading="eager" decoding="sync" data-layout-allow-overflow></div></div>
+        <div class="annotation" id="f05-readings-annotation-0" data-layout-allow-overflow><div class="annotation-label">THE PRIEST</div><h2 data-layout-allow-overlap><span class="type-line accent"><span class="word-mask" data-layout-allow-overflow><span class="title-word" data-layout-allow-overflow>A</span></span> <span class="word-mask" data-layout-allow-overflow><span class="title-word" data-layout-allow-overflow>promise.</span></span></span></h2></div><div class="annotation" id="f05-readings-annotation-1" data-layout-allow-overflow><div class="annotation-label">THE SCIENTIST</div><h2 data-layout-allow-overlap><span class="type-line"><span class="word-mask" data-layout-allow-overflow><span class="title-word" data-layout-allow-overflow>A</span></span> <span class="word-mask" data-layout-allow-overflow><span class="title-word" data-layout-allow-overflow>flood</span></span></span><span class="type-line accent"><span class="word-mask" data-layout-allow-overflow><span class="title-word" data-layout-allow-overflow>measure.</span></span></span></h2></div><div class="annotation" id="f05-readings-annotation-2" data-layout-allow-overflow><div class="annotation-label">THE SOLDIER</div><h2 data-layout-allow-overlap><span class="type-line"><span class="word-mask" data-layout-allow-overflow><span class="title-word" data-layout-allow-overflow>A</span></span> <span class="word-mask" data-layout-allow-overflow><span class="title-word" data-layout-allow-overflow>guarded</span></span></span><span class="type-line accent"><span class="word-mask" data-layout-allow-overflow><span class="title-word" data-layout-allow-overflow>road.</span></span></span></h2></div><div class="annotation" id="f05-readings-annotation-3" data-layout-allow-overflow><div class="annotation-label">THE HISTORIAN</div><h2 data-layout-allow-overlap><span class="type-line"><span class="word-mask" data-layout-allow-overflow><span class="title-word" data-layout-allow-overflow>A</span></span> <span class="word-mask" data-layout-allow-overflow><span class="title-word" data-layout-allow-overflow>remembered</span></span></span><span class="type-line accent"><span class="word-mask" data-layout-allow-overflow><span class="title-word" data-layout-allow-overflow>path.</span></span></span></h2></div>
+      </div>
+      <div class="intro intro--roles" id="f05-readings-intro">
+    <div class="intro-kicker">THE COUNCIL</div>
+    <h1 data-layout-allow-overlap><span class="type-line"><span class="word-mask" data-layout-allow-overflow><span class="title-word" data-layout-allow-overflow>One</span></span> <span class="word-mask" data-layout-allow-overflow><span class="title-word" data-layout-allow-overflow>tower.</span></span></span><span class="type-line accent"><span class="word-mask" data-layout-allow-overflow><span class="title-word" data-layout-allow-overflow>Four</span></span> <span class="word-mask" data-layout-allow-overflow><span class="title-word" data-layout-allow-overflow>readings.</span></span></span></h1>
+    <p class="intro-body"><span class="word-mask" data-layout-allow-overflow><span class="body-word" data-layout-allow-overflow>The</span></span> <span class="word-mask" data-layout-allow-overflow><span class="body-word" data-layout-allow-overflow>same</span></span> <span class="word-mask" data-layout-allow-overflow><span class="body-word" data-layout-allow-overflow>evidence.</span></span> <span class="word-mask" data-layout-allow-overflow><span class="body-word" data-layout-allow-overflow>Different</span></span> <span class="word-mask" data-layout-allow-overflow><span class="body-word" data-layout-allow-overflow>meanings.</span></span></p>
+
+    <div class="role-list"><div class="role">Priest</div><div class="role">Scientist</div><div class="role">Soldier</div><div class="role">Historian</div></div>
+  </div>
+    </div><script>
+    (() => {
+      const root = document.getElementById("root-f05-readings");
+      const START = 36;
+      const DURATION = 10;
+      const EASE = { arrive: "cubic-bezier(.16,1,.3,1)", carry: "cubic-bezier(.65,0,.35,1)", snap: "cubic-bezier(.22,.9,.3,1)", linear: "linear" };
+      const animate = (element, keyframes, at, duration, easing = EASE.arrive) => {
+        if (!element) return null;
+        const animation = element.animate(keyframes, { delay: (START + at) * 1000, duration: duration * 1000, fill: "both", iterations: 1, easing });
+        animation.pause();
+        return animation;
+      };
+      const moveWords = (container, at, variant = 0) => {
+        if (!container) return;
+        container.querySelectorAll(".title-word").forEach((word, i) => {
+          const from = variant % 3 === 0 ? "translate3d(0,115%,0) rotate(3deg)" : variant % 3 === 1 ? "translate3d(108%,0,0)" : "translate3d(0,-112%,0) scale(1.08)";
+          animate(word, [{ transform: from, opacity: 0 }, { transform: "translate3d(0,0,0) rotate(0deg) scale(1)", opacity: 1 }], at + i * .065, .6, variant % 3 === 1 ? EASE.snap : EASE.arrive);
+        });
+        container.querySelectorAll(".body-word").forEach((word, i) => animate(word, [{ transform: "translate3d(0,105%,0)", opacity: 0 }, { transform: "translate3d(0,0,0)", opacity: 1 }], at + .66 + i * .023, .4));
+      };
+      const intro = root.querySelector(".intro");
+      if (intro) {
+        const handoff = 2.15;
+        const span = DURATION + 0.45;
+        animate(intro, [
+          { transform: "translate3d(1920px,0,0)", opacity: 1, offset: 0, easing: EASE.carry },
+          { transform: "translate3d(0,0,0)", opacity: 1, offset: 0.04688995215311005 },
+          { transform: "translate3d(0,0,0)", opacity: 1, offset: (handoff + 0.45) / span, easing: EASE.carry },
+          { transform: "translate3d(-1920px,0,0)", opacity: 0, offset: (handoff + .7 + 0.45) / span },
+          { transform: "translate3d(-1920px,0,0)", opacity: 0, offset: 1 },
+        ], -0.45, span, EASE.linear);
+        animate(root.querySelector(".intro-kicker"), [{ transform: "translate3d(-45px,0,0)", opacity: 0 }, { transform: "translate3d(0,0,0)", opacity: 1 }], -.22, .48);
+        moveWords(intro, -.12, 4);
+
+        root.querySelectorAll(".role").forEach((role, i) => animate(role, [{ transform: "translate3d(180px,0,0)", opacity: 0 }, { transform: "translate3d(0,0,0)", opacity: 1 }], .32 + i * .16, .56, EASE.snap));
+      }
+      const product = root.querySelector(".product");
+      animate(product, [{ transform: "translate3d(660px,0,0) scale(1.12)", opacity: 0 }, { transform: "translate3d(0,0,0) scale(1)", opacity: 1 }], 2.1, .8, EASE.carry);
+      const poses = [[0,1.15,-320,-300],[2.15,1.15,-320,-300],[4.3,1.18,-325,-355],[6.7,1.2,-335,-390],[10,1.22,-340,-435]];
+      animate(root.querySelector(".camera"), poses.map(([t, s, x, y], i) => ({ transform: "translate3d(" + x + "px," + y + "px,0) scale(" + s + ")", offset: t / DURATION, easing: i === poses.length - 1 ? EASE.linear : EASE.carry })), 0, DURATION, EASE.linear);
+      {
+        const annotation = document.getElementById("f05-readings-annotation-0");
+        animate(annotation, [
+          { opacity: 0, transform: "translate3d(95px,0,0)", offset: 0, easing: EASE.snap },
+          { opacity: 1, transform: "translate3d(0,0,0)", offset: .25 },
+          { opacity: 1, transform: "translate3d(-8px,0,0)", offset: .82, easing: EASE.snap },
+          { opacity: 0, transform: "translate3d(-100px,0,0)", offset: 1 },
+        ], 2.85, 1.65, EASE.linear);
+        moveWords(annotation, 2.87, 4);
+      }{
+        const annotation = document.getElementById("f05-readings-annotation-1");
+        animate(annotation, [
+          { opacity: 0, transform: "translate3d(95px,0,0)", offset: 0, easing: EASE.snap },
+          { opacity: 1, transform: "translate3d(0,0,0)", offset: .25 },
+          { opacity: 1, transform: "translate3d(-8px,0,0)", offset: .82, easing: EASE.snap },
+          { opacity: 0, transform: "translate3d(-100px,0,0)", offset: 1 },
+        ], 4.55, 1.65, EASE.linear);
+        moveWords(annotation, 4.569999999999999, 5);
+      }{
+        const annotation = document.getElementById("f05-readings-annotation-2");
+        animate(annotation, [
+          { opacity: 0, transform: "translate3d(95px,0,0)", offset: 0, easing: EASE.snap },
+          { opacity: 1, transform: "translate3d(0,0,0)", offset: .25 },
+          { opacity: 1, transform: "translate3d(-8px,0,0)", offset: .82, easing: EASE.snap },
+          { opacity: 0, transform: "translate3d(-100px,0,0)", offset: 1 },
+        ], 6.25, 1.65, EASE.linear);
+        moveWords(annotation, 6.27, 6);
+      }{
+        const annotation = document.getElementById("f05-readings-annotation-3");
+        animate(annotation, [
+          { opacity: 0, transform: "translate3d(95px,0,0)", offset: 0, easing: EASE.snap },
+          { opacity: 1, transform: "translate3d(0,0,0)", offset: .25 },
+          { opacity: 1, transform: "translate3d(-8px,0,0)", offset: .82, easing: EASE.snap },
+          { opacity: 0, transform: "translate3d(-100px,0,0)", offset: 1 },
+        ], 7.95, 2.05, EASE.linear);
+        moveWords(annotation, 7.97, 7);
+      }
+
+
+
+    })();
+  </script>
+  </template></body></html>

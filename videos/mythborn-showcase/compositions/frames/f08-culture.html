@@ -1,0 +1,103 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Culture</title></head><body><template>
+    <style>
+    @font-face { font-family: Almendra; src: url("assets/fonts/almendra-regular.ttf") format("truetype"); font-weight: 400; }
+    @font-face { font-family: Almendra; src: url("assets/fonts/almendra-bold.ttf") format("truetype"); font-weight: 700; }
+    @font-face { font-family: Uncial; src: url("assets/fonts/uncial-antiqua.ttf") format("truetype"); font-weight: 400; }
+    @font-face { font-family: DM; src: url("assets/fonts/dm-sans-regular.ttf") format("truetype"); font-weight: 400; }
+    @font-face { font-family: DM; src: url("assets/fonts/dm-sans-semibold.ttf") format("truetype"); font-weight: 600; }
+    #root-f08-culture { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; color: #202932; }
+    #root-f08-culture * { box-sizing: border-box; }
+    #root-f08-culture .intro, #root-f08-culture .product { position: absolute; inset: 0; width: 100%; height: 100%; background: #f3f0e9; }
+    #root-f08-culture .intro { z-index: 3; transform-origin: left center; }
+    #root-f08-culture .intro-kicker { position: absolute; top: 196px; left: 112px; color: #ad3f2c; font: 600 24px/1.3 DM, sans-serif; letter-spacing: .12em; }
+    #root-f08-culture h1 { position: absolute; top: 286px; left: 106px; width: 1690px; margin: 0; font: 700 152px/.99 Almendra, Georgia, serif; letter-spacing: -.025em; }
+    #root-f08-culture .type-line { display: block; white-space: nowrap; }
+    #root-f08-culture .accent { color: #ad3f2c; }
+    #root-f08-culture .word-mask { display: inline-block; overflow: hidden; vertical-align: bottom; line-height: 1.12; }
+    #root-f08-culture .title-word, #root-f08-culture .body-word { display: inline-block; transform-origin: left bottom; will-change: transform; }
+    #root-f08-culture .intro-body { position: absolute; left: 112px; top: 726px; width: 1530px; margin: 0; color: #354e62; font: 400 36px/1.35 DM, sans-serif; }
+    #root-f08-culture .intro--compact h1 { font-size: 128px; }
+    #root-f08-culture .intro--photo h1, #root-f08-culture .intro--roles h1 { width: 1010px; font-size: 132px; }
+    #root-f08-culture .intro--photo .intro-body, #root-f08-culture .intro--roles .intro-body { width: 940px; }
+    #root-f08-culture .photo-prop { position: absolute; left: 1080px; top: 252px; width: 740px; height: 556px; overflow: hidden; }
+    #root-f08-culture .photo-prop img { width: 100%; height: 100%; object-fit: cover; transform-origin: center; }
+    #root-f08-culture .role-list { position: absolute; left: 1290px; top: 306px; width: 540px; font: 400 67px/1.46 Almendra, Georgia, serif; }
+    #root-f08-culture .role:nth-child(even) { color: #ad3f2c; }
+    #root-f08-culture .product { z-index: 1; overflow: hidden; }
+    #root-f08-culture .surface { position: absolute; inset: 0; overflow: hidden; width: 1150px; }
+    #root-f08-culture .camera { position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; transform-origin: 0 0; will-change: transform; }
+    #root-f08-culture .screen { display: block; width: 1920px; height: auto; clip-path: inset(0 16px 0 0); }
+    #root-f08-culture .annotation { position: absolute; z-index: 2; left: 1240px; top: 288px; width: 560px; }
+    #root-f08-culture .annotation-label { color: #ad3f2c; font: 600 22px/1.4 DM, sans-serif; letter-spacing: .09em; }
+    #root-f08-culture h2 { margin: 28px 0 0; font: 700 76px/1.04 Almendra, Georgia, serif; letter-spacing: -.025em; }
+    #root-f08-culture .annotation p { margin: 26px 0 0; color: #354e62; font: 400 31px/1.4 DM, sans-serif; }
+    #root-f08-culture .annotation .type-line { white-space: normal; }
+    #root-f08-culture .annotation .type-line:last-child { color: #ad3f2c; }
+    #root-f08-culture .cursor { position: absolute; z-index: 5; top: -1.875px; left: -1.895px; width: 24px; height: 30px; opacity: 0; transform-origin: 1.895px 1.875px; }
+    #root-f08-culture .cursor svg { display: block; width: 100%; height: 100%; }
+    #root-f08-culture .ripple { position: absolute; z-index: 4; top: 0; left: 0; width: 38px; height: 38px; margin: -19px 0 0 -19px; border: 2px solid #ad3f2c; border-radius: 50%; opacity: 0; }
+    #root-f08-culture .close { position: absolute; z-index: 5; inset: 0; background: #152330; color: #faf8f3; }
+    #root-f08-culture .close-lockup { position: absolute; left: 112px; top: 150px; display: flex; align-items: center; gap: 24px; font: 400 70px/1.1 Uncial, Georgia, serif; }
+    #root-f08-culture .close-lockup img { width: 76px; height: 76px; filter: brightness(0) invert(1); }
+    #root-f08-culture .close h1 { top: 338px; width: 1650px; font-size: 156px; }
+    #root-f08-culture .close .accent { color: #e6bc7a; }
+    #root-f08-culture .close p { position: absolute; top: 800px; left: 112px; width: 1480px; margin: 0; color: #e6bc7a; font: 400 34px/1.4 DM, sans-serif; }
+  </style>
+    <div id="root-f08-culture" data-composition-id="f08-culture" data-width="1920" data-height="1080" data-duration="4.45" data-no-timeline>
+      <div class="product" id="f08-culture-product">
+        <div class="surface"><div class="camera" id="f08-culture-camera" data-layout-allow-overflow><img class="screen" id="f08-culture-screen" src="capture-polish/08-culture.png" alt="Real adopted Evening Watch ritual in the culture tab" width="1920" height="1080" loading="eager" decoding="sync" data-layout-allow-overflow></div></div>
+        <div class="annotation" id="f08-culture-story-type" data-layout-allow-overflow><div class="annotation-label">WHAT BECOMES A PRACTICE</div><h2 data-layout-allow-overlap><span class="type-line accent"><span class="word-mask" data-layout-allow-overflow><span class="title-word" data-layout-allow-overflow>Culture.</span></span></span></h2><p><span class="word-mask" data-layout-allow-overflow><span class="body-word" data-layout-allow-overflow>The</span></span> <span class="word-mask" data-layout-allow-overflow><span class="body-word" data-layout-allow-overflow>Evening</span></span> <span class="word-mask" data-layout-allow-overflow><span class="body-word" data-layout-allow-overflow>Watch</span></span> <span class="word-mask" data-layout-allow-overflow><span class="body-word" data-layout-allow-overflow>becomes</span></span> <span class="word-mask" data-layout-allow-overflow><span class="body-word" data-layout-allow-overflow>a</span></span> <span class="word-mask" data-layout-allow-overflow><span class="body-word" data-layout-allow-overflow>ritual.</span></span></p></div>
+      </div>
+
+    </div><script>
+    (() => {
+      const root = document.getElementById("root-f08-culture");
+      const START = 77;
+      const DURATION = 4;
+      const EASE = { arrive: "cubic-bezier(.16,1,.3,1)", carry: "cubic-bezier(.65,0,.35,1)", snap: "cubic-bezier(.22,.9,.3,1)", linear: "linear" };
+      const animate = (element, keyframes, at, duration, easing = EASE.arrive) => {
+        if (!element) return null;
+        const animation = element.animate(keyframes, { delay: (START + at) * 1000, duration: duration * 1000, fill: "both", iterations: 1, easing });
+        animation.pause();
+        return animation;
+      };
+      const moveWords = (container, at, variant = 0) => {
+        if (!container) return;
+        container.querySelectorAll(".title-word").forEach((word, i) => {
+          const from = variant % 3 === 0 ? "translate3d(0,115%,0) rotate(3deg)" : variant % 3 === 1 ? "translate3d(108%,0,0)" : "translate3d(0,-112%,0) scale(1.08)";
+          animate(word, [{ transform: from, opacity: 0 }, { transform: "translate3d(0,0,0) rotate(0deg) scale(1)", opacity: 1 }], at + i * .065, .6, variant % 3 === 1 ? EASE.snap : EASE.arrive);
+        });
+        container.querySelectorAll(".body-word").forEach((word, i) => animate(word, [{ transform: "translate3d(0,105%,0)", opacity: 0 }, { transform: "translate3d(0,0,0)", opacity: 1 }], at + .66 + i * .023, .4));
+      };
+      const intro = root.querySelector(".intro");
+      if (intro) {
+        const handoff = 0;
+        const span = DURATION + 0.45;
+        animate(intro, [
+          { transform: "translate3d(1920px,0,0)", opacity: 1, offset: 0, easing: EASE.carry },
+          { transform: "translate3d(0,0,0)", opacity: 1, offset: 0.1101123595505618 },
+          { transform: "translate3d(0,0,0)", opacity: 1, offset: (handoff + 0.45) / span, easing: EASE.carry },
+          { transform: "translate3d(-1920px,0,0)", opacity: 0, offset: (handoff + .7 + 0.45) / span },
+          { transform: "translate3d(-1920px,0,0)", opacity: 0, offset: 1 },
+        ], -0.45, span, EASE.linear);
+        animate(root.querySelector(".intro-kicker"), [{ transform: "translate3d(-45px,0,0)", opacity: 0 }, { transform: "translate3d(0,0,0)", opacity: 1 }], -.22, .48);
+        moveWords(intro, -.12, 9);
+
+
+      }
+      const product = root.querySelector(".product");
+      animate(product, [{ transform: "translate3d(0,1080px,0)", opacity: 1 }, { transform: "translate3d(0,0,0)", opacity: 1 }], -0.45, 0.7, EASE.carry);
+      const poses = [[0,1.4,-390,-440],[1.8,1.5,-425,-470],[4,1.58,-450,-500]];
+      animate(root.querySelector(".camera"), poses.map(([t, s, x, y], i) => ({ transform: "translate3d(" + x + "px," + y + "px,0) scale(" + s + ")", offset: t / DURATION, easing: i === poses.length - 1 ? EASE.linear : EASE.carry })), 0, DURATION, EASE.linear);
+
+      {
+        const story = document.getElementById("f08-culture-story-type");
+        animate(story, [{ transform: "translate3d(100px,0,0)", opacity: 0 }, { transform: "translate3d(0,0,0)", opacity: 1 }], .18, .55, EASE.snap);
+        moveWords(story, .28, 9);
+        animate(story.querySelector(".annotation-label"), [{ transform: "translate3d(0,-20px,0)", opacity: 0 }, { transform: "translate3d(0,0,0)", opacity: 1 }], .15, .5);
+      }
+
+
+    })();
+  </script>
+  </template></body></html>

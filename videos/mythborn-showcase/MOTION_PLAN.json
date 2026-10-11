@@ -1,0 +1,570 @@
+{
+  "duration": 90,
+  "runtime": "waapi",
+  "clock": "global",
+  "scenes": [
+    {
+      "id": "f01-atlas",
+      "start": 0,
+      "duration": 8,
+      "clipStart": 0,
+      "clipDuration": 8,
+      "handoff": 2.5,
+      "poses": [
+        [
+          0,
+          2.4,
+          -2160,
+          -372
+        ],
+        [
+          2.5,
+          2.4,
+          -2160,
+          -372
+        ],
+        [
+          4.2,
+          1.5,
+          -480,
+          -180
+        ],
+        [
+          6,
+          1.35,
+          -270,
+          -660
+        ],
+        [
+          8,
+          1.4,
+          -285,
+          -845
+        ]
+      ],
+      "image": "capture-polish/01-atlas.png"
+    },
+    {
+      "id": "f02-founding",
+      "start": 8,
+      "duration": 9,
+      "clipStart": 7.55,
+      "clipDuration": 9.45,
+      "handoff": 2.5,
+      "poses": [
+        [
+          0,
+          1.16,
+          -170,
+          -70
+        ],
+        [
+          2.5,
+          1.16,
+          -170,
+          -70
+        ],
+        [
+          4.2,
+          1.6,
+          -1430,
+          -250
+        ],
+        [
+          6.6,
+          1.45,
+          -1270,
+          -500
+        ],
+        [
+          9,
+          1.47,
+          -1280,
+          -520
+        ]
+      ],
+      "cursor": {
+        "from": [
+          1220,
+          560
+        ],
+        "clicks": [
+          {
+            "x": 952.0234375,
+            "y": 722.9140625,
+            "at": 6.8,
+            "press": true,
+            "control": "messenger",
+            "bounds": {
+              "x": 942.828125,
+              "y": 713.71875,
+              "width": 18.390625,
+              "height": 18.390625,
+              "cx": 952.0234375,
+              "cy": 722.9140625
+            }
+          }
+        ]
+      },
+      "image": "capture-polish/02-founding.png"
+    },
+    {
+      "id": "f03-world",
+      "start": 17,
+      "duration": 9,
+      "clipStart": 16.55,
+      "clipDuration": 9.45,
+      "handoff": 2.4,
+      "poses": [
+        [
+          0,
+          2.25,
+          -1050,
+          -490
+        ],
+        [
+          2.4,
+          2.25,
+          -1050,
+          -490
+        ],
+        [
+          4.2,
+          1.18,
+          -220,
+          -175
+        ],
+        [
+          6.8,
+          1.2,
+          -240,
+          -540
+        ],
+        [
+          9,
+          1.22,
+          -250,
+          -555
+        ]
+      ],
+      "image": "capture-polish/03-world.png"
+    },
+    {
+      "id": "f04-photo",
+      "start": 26,
+      "duration": 10,
+      "clipStart": 25.55,
+      "clipDuration": 10.45,
+      "handoff": 2.5,
+      "poses": [
+        [
+          0,
+          2.2,
+          -965,
+          -630
+        ],
+        [
+          2.5,
+          2.2,
+          -965,
+          -630
+        ],
+        [
+          4.1,
+          1.1,
+          -220,
+          -50
+        ],
+        [
+          5.4,
+          1.42,
+          -380,
+          -310
+        ],
+        [
+          7.4,
+          1.2,
+          -270,
+          -200
+        ],
+        [
+          10,
+          1.22,
+          -275,
+          -215
+        ]
+      ],
+      "cursor": {
+        "from": [
+          940,
+          460
+        ],
+        "clicks": [
+          {
+            "x": 749.2265625,
+            "y": 540.484375,
+            "at": 5,
+            "press": false,
+            "control": "photo",
+            "bounds": {
+              "x": 361.5,
+              "y": 396.484375,
+              "width": 775.453125,
+              "height": 288,
+              "cx": 749.2265625,
+              "cy": 540.484375
+            }
+          },
+          {
+            "x": 440.5,
+            "y": 980.453125,
+            "at": 8.2,
+            "press": true,
+            "control": "begin",
+            "bounds": {
+              "x": 360.5,
+              "y": 957.453125,
+              "width": 160,
+              "height": 46,
+              "cx": 440.5,
+              "cy": 980.453125
+            }
+          }
+        ]
+      },
+      "image": "capture-polish/03-discovery-photo.png"
+    },
+    {
+      "id": "f05-readings",
+      "start": 36,
+      "duration": 10,
+      "clipStart": 35.55,
+      "clipDuration": 10.45,
+      "handoff": 2.15,
+      "poses": [
+        [
+          0,
+          1.15,
+          -320,
+          -300
+        ],
+        [
+          2.15,
+          1.15,
+          -320,
+          -300
+        ],
+        [
+          4.3,
+          1.18,
+          -325,
+          -355
+        ],
+        [
+          6.7,
+          1.2,
+          -335,
+          -390
+        ],
+        [
+          10,
+          1.22,
+          -340,
+          -435
+        ]
+      ],
+      "annotations": [
+        {
+          "at": 2.85,
+          "duration": 1.65,
+          "kicker": "THE PRIEST",
+          "lines": [
+            "A promise."
+          ]
+        },
+        {
+          "at": 4.55,
+          "duration": 1.65,
+          "kicker": "THE SCIENTIST",
+          "lines": [
+            "A flood",
+            "measure."
+          ]
+        },
+        {
+          "at": 6.25,
+          "duration": 1.65,
+          "kicker": "THE SOLDIER",
+          "lines": [
+            "A guarded",
+            "road."
+          ]
+        },
+        {
+          "at": 7.95,
+          "duration": 2.05,
+          "kicker": "THE HISTORIAN",
+          "lines": [
+            "A remembered",
+            "path."
+          ]
+        }
+      ],
+      "image": "capture-polish/05-agent-debate.png"
+    },
+    {
+      "id": "f06-rebuttals",
+      "start": 46,
+      "duration": 12,
+      "clipStart": 45.55,
+      "clipDuration": 12.45,
+      "handoff": 2.5,
+      "poses": [
+        [
+          0,
+          1.4,
+          -365,
+          -10
+        ],
+        [
+          2.5,
+          1.4,
+          -365,
+          -10
+        ],
+        [
+          5.3,
+          1.42,
+          -385,
+          -65
+        ],
+        [
+          8.3,
+          1.4,
+          -365,
+          -1210
+        ],
+        [
+          12,
+          1.42,
+          -375,
+          -1400
+        ]
+      ],
+      "annotations": [
+        {
+          "at": 3.1,
+          "duration": 3.1,
+          "kicker": "RESPONSES ARRIVE",
+          "lines": [
+            "They answer",
+            "each other."
+          ],
+          "body": "Two of four rebuttals have arrived in this captured demo."
+        },
+        {
+          "at": 6.35,
+          "duration": 5.65,
+          "kicker": "DISAGREEMENT STAYS VISIBLE",
+          "lines": [
+            "The debate",
+            "is part of",
+            "the story."
+          ]
+        }
+      ],
+      "image": "capture-polish/05-agent-debate.png"
+    },
+    {
+      "id": "f07-chronicle",
+      "start": 58,
+      "duration": 11,
+      "clipStart": 57.55,
+      "clipDuration": 11.45,
+      "handoff": 2.7,
+      "poses": [
+        [
+          0,
+          1.17,
+          -302,
+          50
+        ],
+        [
+          2.7,
+          1.17,
+          -302,
+          50
+        ],
+        [
+          5.4,
+          1.19,
+          -310,
+          -20
+        ],
+        [
+          8.2,
+          1.17,
+          -300,
+          -280
+        ],
+        [
+          11,
+          1.15,
+          -290,
+          -310
+        ]
+      ],
+      "annotations": [
+        {
+          "at": 3.35,
+          "duration": 2.1,
+          "kicker": "THE SHARED FACT",
+          "lines": [
+            "The tower",
+            "watched",
+            "the valley."
+          ]
+        },
+        {
+          "at": 5.5,
+          "duration": 2.5,
+          "kicker": "THE OPEN QUESTION",
+          "lines": [
+            "What were",
+            "its keepers",
+            "watching for?"
+          ]
+        },
+        {
+          "at": 8.05,
+          "duration": 2.95,
+          "kicker": "YOUR NEXT DISCOVERY",
+          "lines": [
+            "Go outside",
+            "again."
+          ],
+          "body": "Follow the hint, or bring any photo."
+        }
+      ],
+      "image": "capture-polish/04-chronicle.png"
+    },
+    {
+      "id": "f08-belief",
+      "start": 69,
+      "duration": 4,
+      "clipStart": 68.55,
+      "clipDuration": 4.45,
+      "poses": [
+        [
+          0,
+          1.36,
+          -1140,
+          -100
+        ],
+        [
+          1.8,
+          1.42,
+          -1190,
+          -140
+        ],
+        [
+          4,
+          1.47,
+          -1230,
+          -190
+        ]
+      ],
+      "image": "capture-polish/06-beliefs.png"
+    },
+    {
+      "id": "f08-mystery",
+      "start": 73,
+      "duration": 4,
+      "clipStart": 72.55,
+      "clipDuration": 4.45,
+      "poses": [
+        [
+          0,
+          1.17,
+          -360,
+          -260
+        ],
+        [
+          1.8,
+          1.2,
+          -375,
+          -305
+        ],
+        [
+          4,
+          1.22,
+          -385,
+          -350
+        ]
+      ],
+      "image": "capture-polish/07-mysteries.png"
+    },
+    {
+      "id": "f08-culture",
+      "start": 77,
+      "duration": 4,
+      "clipStart": 76.55,
+      "clipDuration": 4.45,
+      "poses": [
+        [
+          0,
+          1.4,
+          -390,
+          -440
+        ],
+        [
+          1.8,
+          1.5,
+          -425,
+          -470
+        ],
+        [
+          4,
+          1.58,
+          -450,
+          -500
+        ]
+      ],
+      "image": "capture-polish/08-culture.png"
+    },
+    {
+      "id": "f09-history-end",
+      "start": 81,
+      "duration": 9,
+      "clipStart": 80.55,
+      "clipDuration": 9.45,
+      "poses": [
+        [
+          0,
+          0.9,
+          -255,
+          -300
+        ],
+        [
+          2,
+          0.92,
+          -275,
+          -325
+        ],
+        [
+          4,
+          0.93,
+          -290,
+          -345
+        ],
+        [
+          9,
+          0.94,
+          -300,
+          -360
+        ]
+      ],
+      "image": "capture-polish/09-history.png"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "duration": 9.45,
+  "assertions": [
+    {
+      "kind": "keepsMoving",
+      "withinSelector": "#root-f09-history-end",
+      "maxStaticSec": 1.5
+    }
+  ]
+}

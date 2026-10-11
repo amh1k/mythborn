@@ -1,0 +1,10 @@
+{
+  "duration": 12.45,
+  "assertions": [
+    {
+      "kind": "keepsMoving",
+      "withinSelector": "#root-f06-rebuttals",
+      "maxStaticSec": 1.5
+    }
+  ]
+}
