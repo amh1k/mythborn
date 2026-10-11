@@ -1,0 +1,893 @@
+{
+  "01-atlas": {
+    "scrollY": 0,
+    "controls": {
+      "messenger": null,
+      "photo": null,
+      "begin": null
+    },
+    "regions": [
+      {
+        "text": "Your worlds.Their histories.",
+        "x": 368.5,
+        "y": 200.796875,
+        "width": 496,
+        "height": 224.625,
+        "cx": 616.5,
+        "cy": 313.109375
+      },
+      {
+        "text": "In progress",
+        "x": 312.5,
+        "y": 721.578125,
+        "width": 168,
+        "height": 40.3125,
+        "cx": 396.5,
+        "cy": 741.734375
+      },
+      {
+        "text": "Valley of First Rain",
+        "x": 312.5,
+        "y": 1057.078125,
+        "width": 410.65625,
+        "height": 34.546875,
+        "cx": 517.828125,
+        "cy": 1074.3515625
+      }
+    ],
+    "images": [
+      {
+        "src": "/art/hero-citadel.webp",
+        "complete": true,
+        "naturalWidth": 1536,
+        "naturalHeight": 1024
+      },
+      {
+        "src": "/art/hero-harbor.webp",
+        "complete": true,
+        "naturalWidth": 1536,
+        "naturalHeight": 1024
+      },
+      {
+        "src": "/art/hero-sanctuary.webp",
+        "complete": true,
+        "naturalWidth": 1536,
+        "naturalHeight": 1024
+      },
+      {
+        "src": "/art/world-monastery.webp",
+        "complete": true,
+        "naturalWidth": 1536,
+        "naturalHeight": 1024
+      }
+    ],
+    "width": 1920,
+    "height": 1438
+  },
+  "03-world": {
+    "scrollY": 0,
+    "controls": {
+      "messenger": null,
+      "photo": null,
+      "begin": {
+        "x": 360.5,
+        "y": 1547.453125,
+        "width": 160,
+        "height": 46,
+        "cx": 440.5,
+        "cy": 1570.453125
+      }
+    },
+    "regions": [
+      {
+        "text": "Valley of First Rain",
+        "x": 360.5,
+        "y": 521.890625,
+        "width": 554.609375,
+        "height": 77.75,
+        "cx": 637.8046875,
+        "cy": 560.765625
+      },
+      {
+        "text": "Add a photo.",
+        "x": 360.5,
+        "y": 766.734375,
+        "width": 512,
+        "height": 57.59375,
+        "cx": 616.5,
+        "cy": 795.53125
+      },
+      {
+        "text": "Recent chronicles",
+        "x": 360.5,
+        "y": 1741.046875,
+        "width": 231,
+        "height": 35.5,
+        "cx": 476,
+        "cy": 1758.796875
+      },
+      {
+        "text": "discovery · Sep 14, 2026majorityThe tower watched the river, though no one agrees what warning it gave.The cou",
+        "x": 360.5,
+        "y": 1792.546875,
+        "width": 777.453125,
+        "height": 295.3125,
+        "cx": 749.2265625,
+        "cy": 1940.203125
+      },
+      {
+        "text": "The tower watched the river, though no one agrees what warning it gave.",
+        "x": 528.5,
+        "y": 1808.546875,
+        "width": 593.453125,
+        "height": 71.28125,
+        "cx": 825.2265625,
+        "cy": 1844.1875
+      },
+      {
+        "text": "The council",
+        "x": 1217.953125,
+        "y": 770.734375,
+        "width": 136,
+        "height": 35.5,
+        "cx": 1285.953125,
+        "cy": 788.484375
+      },
+      {
+        "text": "Messenger",
+        "x": 1217.953125,
+        "y": 1332.609375,
+        "width": 326.53125,
+        "height": 28.796875,
+        "cx": 1381.21875,
+        "cy": 1347.0078125
+      },
+      {
+        "text": "Ongoing mysteries",
+        "x": 360.5,
+        "y": 2152.65625,
+        "width": 250,
+        "height": 35.5,
+        "cx": 485.5,
+        "cy": 2170.40625
+      },
+      {
+        "text": "Who first lit the tower?",
+        "x": 360.5,
+        "y": 2270.546875,
+        "width": 240,
+        "height": 28.796875,
+        "cx": 480.5,
+        "cy": 2284.9453125
+      },
+      {
+        "text": "The road beyond the ridge",
+        "x": 360.5,
+        "y": 2515.09375,
+        "width": 272,
+        "height": 28.796875,
+        "cx": 496.5,
+        "cy": 2529.4921875
+      }
+    ],
+    "images": [
+      {
+        "src": "/art/world-monastery.webp",
+        "complete": true,
+        "naturalWidth": 1536,
+        "naturalHeight": 1024
+      }
+    ],
+    "width": 1920,
+    "height": 2868
+  },
+  "02-founding": {
+    "scrollY": 0,
+    "controls": {
+      "messenger": {
+        "x": 942.828125,
+        "y": 713.71875,
+        "width": 18.390625,
+        "height": 18.390625,
+        "cx": 952.0234375,
+        "cy": 722.9140625
+      },
+      "photo": null,
+      "begin": null
+    },
+    "regions": [
+      {
+        "text": "A name.A perspective.A beginning.",
+        "x": 344.5,
+        "y": 232.796875,
+        "width": 469.328125,
+        "height": 182.390625,
+        "cx": 579.1640625,
+        "cy": 323.9921875
+      },
+      {
+        "text": "Name your civilization",
+        "x": 925.828125,
+        "y": 221.890625,
+        "width": 666.671875,
+        "height": 62.390625,
+        "cx": 1259.1640625,
+        "cy": 253.0859375
+      }
+    ],
+    "images": [],
+    "width": 1920,
+    "height": 1113
+  },
+  "03-discovery-photo": {
+    "scrollY": 638,
+    "controls": {
+      "messenger": null,
+      "photo": {
+        "x": 361.5,
+        "y": 396.484375,
+        "width": 775.453125,
+        "height": 288,
+        "cx": 749.2265625,
+        "cy": 540.484375
+      },
+      "begin": {
+        "x": 360.5,
+        "y": 957.453125,
+        "width": 160,
+        "height": 46,
+        "cx": 440.5,
+        "cy": 980.453125
+      }
+    },
+    "regions": [
+      {
+        "text": "Valley of First Rain",
+        "x": 360.5,
+        "y": -116.109375,
+        "width": 554.609375,
+        "height": 77.75,
+        "cx": 637.8046875,
+        "cy": -77.234375
+      },
+      {
+        "text": "Add a photo.",
+        "x": 360.5,
+        "y": 128.734375,
+        "width": 512,
+        "height": 57.59375,
+        "cx": 616.5,
+        "cy": 157.53125
+      },
+      {
+        "text": "Recent chronicles",
+        "x": 360.5,
+        "y": 1151.046875,
+        "width": 231,
+        "height": 35.5,
+        "cx": 476,
+        "cy": 1168.796875
+      },
+      {
+        "text": "discovery · Sep 14, 2026majorityThe tower watched the river, though no one agrees what warning it gave.The cou",
+        "x": 360.5,
+        "y": 1202.546875,
+        "width": 777.453125,
+        "height": 295.3125,
+        "cx": 749.2265625,
+        "cy": 1350.203125
+      },
+      {
+        "text": "The tower watched the river, though no one agrees what warning it gave.",
+        "x": 528.5,
+        "y": 1218.546875,
+        "width": 593.453125,
+        "height": 71.28125,
+        "cx": 825.2265625,
+        "cy": 1254.1875
+      },
+      {
+        "text": "The council",
+        "x": 1217.953125,
+        "y": 132.734375,
+        "width": 136,
+        "height": 35.5,
+        "cx": 1285.953125,
+        "cy": 150.484375
+      },
+      {
+        "text": "Messenger",
+        "x": 1217.953125,
+        "y": 694.609375,
+        "width": 326.53125,
+        "height": 28.796875,
+        "cx": 1381.21875,
+        "cy": 709.0078125
+      },
+      {
+        "text": "Ongoing mysteries",
+        "x": 360.5,
+        "y": 1562.65625,
+        "width": 250,
+        "height": 35.5,
+        "cx": 485.5,
+        "cy": 1580.40625
+      },
+      {
+        "text": "Who first lit the tower?",
+        "x": 360.5,
+        "y": 1680.546875,
+        "width": 240,
+        "height": 28.796875,
+        "cx": 480.5,
+        "cy": 1694.9453125
+      },
+      {
+        "text": "The road beyond the ridge",
+        "x": 360.5,
+        "y": 1925.09375,
+        "width": 272,
+        "height": 28.796875,
+        "cx": 496.5,
+        "cy": 1939.4921875
+      }
+    ],
+    "images": [
+      {
+        "src": "/art/world-monastery.webp",
+        "complete": true,
+        "naturalWidth": 1536,
+        "naturalHeight": 1024
+      },
+      {
+        "src": "blob:http://127.0.0.1:5187/8170b354-15ac-425c-bfc7-aa1c22d28741",
+        "complete": true,
+        "naturalWidth": 1536,
+        "naturalHeight": 1024
+      }
+    ],
+    "width": 1920,
+    "height": 2278
+  },
+  "06-beliefs": {
+    "scrollY": 620,
+    "controls": {
+      "messenger": null,
+      "photo": null,
+      "begin": null
+    },
+    "regions": [
+      {
+        "text": "Valley of First Rain",
+        "x": 360.5,
+        "y": -98.109375,
+        "width": 554.609375,
+        "height": 77.75,
+        "cx": 637.8046875,
+        "cy": -59.234375
+      },
+      {
+        "text": "The council",
+        "x": 360.5,
+        "y": 146.734375,
+        "width": 303,
+        "height": 35.5,
+        "cx": 512,
+        "cy": 164.484375
+      },
+      {
+        "text": "The Priest",
+        "x": 882.09375,
+        "y": 203.53125,
+        "width": 662.40625,
+        "height": 46.078125,
+        "cx": 1213.296875,
+        "cy": 226.5703125
+      },
+      {
+        "text": "Current beliefs",
+        "x": 882.09375,
+        "y": 281.609375,
+        "width": 145,
+        "height": 26.390625,
+        "cx": 954.59375,
+        "cy": 294.8046875
+      },
+      {
+        "text": "The tower’s light is a promise to the river.heldBelief history (1)adopted · The watch returned each evening as",
+        "x": 882.09375,
+        "y": 324,
+        "width": 662.40625,
+        "height": 140.4375,
+        "cx": 1213.296875,
+        "cy": 394.21875
+      },
+      {
+        "text": "How this agent views the others",
+        "x": 882.09375,
+        "y": 496.4375,
+        "width": 662.40625,
+        "height": 26.390625,
+        "cx": 1213.296875,
+        "cy": 509.6328125
+      },
+      {
+        "text": "Speak with this agent",
+        "x": 882.09375,
+        "y": 685.109375,
+        "width": 662.40625,
+        "height": 26.390625,
+        "cx": 1213.296875,
+        "cy": 698.3046875
+      }
+    ],
+    "images": [
+      {
+        "src": "/art/world-monastery.webp",
+        "complete": true,
+        "naturalWidth": 1536,
+        "naturalHeight": 1024
+      }
+    ],
+    "width": 1920,
+    "height": 1128
+  },
+  "08-culture": {
+    "scrollY": 392,
+    "controls": {
+      "messenger": null,
+      "photo": null,
+      "begin": null
+    },
+    "regions": [
+      {
+        "text": "Valley of First Rain",
+        "x": 360.5,
+        "y": 129.890625,
+        "width": 554.609375,
+        "height": 77.75,
+        "cx": 637.8046875,
+        "cy": 168.765625
+      },
+      {
+        "text": "The culture of this world",
+        "x": 360.5,
+        "y": 407.53125,
+        "width": 649,
+        "height": 46.078125,
+        "cx": 685,
+        "cy": 430.5703125
+      },
+      {
+        "text": "adopted",
+        "x": 360.5,
+        "y": 544,
+        "width": 94,
+        "height": 30.703125,
+        "cx": 407.5,
+        "cy": 559.3515625
+      },
+      {
+        "text": "ritualThe evening watchWhen clouds gather upriver, a watchkeeper climbs the tower at dusk and reports the wate",
+        "x": 360.5,
+        "y": 590.703125,
+        "width": 373.328125,
+        "height": 348.859375,
+        "cx": 547.1640625,
+        "cy": 765.1328125
+      },
+      {
+        "text": "The evening watch",
+        "x": 360.5,
+        "y": 643.484375,
+        "width": 373.328125,
+        "height": 34.546875,
+        "cx": 547.1640625,
+        "cy": 660.7578125
+      },
+      {
+        "text": "contested",
+        "x": 765.828125,
+        "y": 544,
+        "width": 110,
+        "height": 30.703125,
+        "cx": 820.828125,
+        "cy": 559.3515625
+      },
+      {
+        "text": "retired",
+        "x": 1171.15625,
+        "y": 544,
+        "width": 85,
+        "height": 30.703125,
+        "cx": 1213.65625,
+        "cy": 559.3515625
+      }
+    ],
+    "images": [
+      {
+        "src": "/art/world-monastery.webp",
+        "complete": true,
+        "naturalWidth": 1536,
+        "naturalHeight": 1024
+      }
+    ],
+    "width": 1920,
+    "height": 1080
+  },
+  "09-history": {
+    "scrollY": 0,
+    "controls": {
+      "messenger": null,
+      "photo": null,
+      "begin": null
+    },
+    "regions": [
+      {
+        "text": "Valley of First Rain",
+        "x": 360.5,
+        "y": 521.890625,
+        "width": 554.609375,
+        "height": 77.75,
+        "cx": 637.8046875,
+        "cy": 560.765625
+      },
+      {
+        "text": "discovery · Sep 14, 2026majorityThe tower watched the river, though no one agrees what warning it gave.The cou",
+        "x": 360.5,
+        "y": 766.734375,
+        "width": 1184,
+        "height": 392.859375,
+        "cx": 952.5,
+        "cy": 963.1640625
+      },
+      {
+        "text": "The tower watched the river, though no one agrees what warning it gave.",
+        "x": 512.5,
+        "y": 790.734375,
+        "width": 1032,
+        "height": 35.640625,
+        "cx": 1028.5,
+        "cy": 808.5546875
+      }
+    ],
+    "images": [
+      {
+        "src": "/art/world-monastery.webp",
+        "complete": true,
+        "naturalWidth": 1536,
+        "naturalHeight": 1024
+      }
+    ],
+    "width": 1920,
+    "height": 1284
+  },
+  "07-mysteries": {
+    "scrollY": 1788,
+    "controls": {
+      "messenger": null,
+      "photo": null,
+      "begin": {
+        "x": 360.5,
+        "y": -240.546875,
+        "width": 160,
+        "height": 46,
+        "cx": 440.5,
+        "cy": -217.546875
+      }
+    },
+    "regions": [
+      {
+        "text": "Valley of First Rain",
+        "x": 360.5,
+        "y": -1266.109375,
+        "width": 554.609375,
+        "height": 77.75,
+        "cx": 637.8046875,
+        "cy": -1227.234375
+      },
+      {
+        "text": "Add a photo.",
+        "x": 360.5,
+        "y": -1021.265625,
+        "width": 512,
+        "height": 57.59375,
+        "cx": 616.5,
+        "cy": -992.46875
+      },
+      {
+        "text": "Recent chronicles",
+        "x": 360.5,
+        "y": -46.953125,
+        "width": 231,
+        "height": 35.5,
+        "cx": 476,
+        "cy": -29.203125
+      },
+      {
+        "text": "discovery · Sep 14, 2026majorityThe tower watched the river, though no one agrees what warning it gave.The cou",
+        "x": 360.5,
+        "y": 4.546875,
+        "width": 777.453125,
+        "height": 295.3125,
+        "cx": 749.2265625,
+        "cy": 152.203125
+      },
+      {
+        "text": "The tower watched the river, though no one agrees what warning it gave.",
+        "x": 528.5,
+        "y": 20.546875,
+        "width": 593.453125,
+        "height": 71.28125,
+        "cx": 825.2265625,
+        "cy": 56.1875
+      },
+      {
+        "text": "The council",
+        "x": 1217.953125,
+        "y": -1017.265625,
+        "width": 136,
+        "height": 35.5,
+        "cx": 1285.953125,
+        "cy": -999.515625
+      },
+      {
+        "text": "Messenger",
+        "x": 1217.953125,
+        "y": -455.390625,
+        "width": 326.53125,
+        "height": 28.796875,
+        "cx": 1381.21875,
+        "cy": -440.9921875
+      },
+      {
+        "text": "Ongoing mysteries",
+        "x": 360.5,
+        "y": 364.65625,
+        "width": 250,
+        "height": 35.5,
+        "cx": 485.5,
+        "cy": 382.40625
+      },
+      {
+        "text": "Who first lit the tower?",
+        "x": 360.5,
+        "y": 482.546875,
+        "width": 240,
+        "height": 28.796875,
+        "cx": 480.5,
+        "cy": 496.9453125
+      },
+      {
+        "text": "The road beyond the ridge",
+        "x": 360.5,
+        "y": 727.09375,
+        "width": 272,
+        "height": 28.796875,
+        "cx": 496.5,
+        "cy": 741.4921875
+      }
+    ],
+    "images": [
+      {
+        "src": "/art/world-monastery.webp",
+        "complete": true,
+        "naturalWidth": 1536,
+        "naturalHeight": 1024
+      }
+    ],
+    "width": 1920,
+    "height": 1080
+  },
+  "05-agent-debate": {
+    "scrollY": 1354,
+    "controls": {
+      "messenger": null,
+      "photo": null,
+      "begin": null
+    },
+    "regions": [
+      {
+        "text": "A discovery is unfolding",
+        "x": 312.5,
+        "y": -1156.109375,
+        "width": 515.21875,
+        "height": 46.078125,
+        "cx": 570.109375,
+        "cy": -1133.0703125
+      },
+      {
+        "text": "Rebuttals in progress",
+        "x": 333.5,
+        "y": -1015.25,
+        "width": 206,
+        "height": 26.390625,
+        "cx": 436.5,
+        "cy": -1002.0546875
+      },
+      {
+        "text": "Rebuttals in progress",
+        "x": 312.5,
+        "y": 82.78125,
+        "width": 319,
+        "height": 40.3125,
+        "cx": 472,
+        "cy": 102.9375
+      },
+      {
+        "text": "First reactions",
+        "x": 312.5,
+        "y": 407.21875,
+        "width": 171,
+        "height": 32.640625,
+        "cx": 398,
+        "cy": 423.5390625
+      },
+      {
+        "text": "PThe PriestFirst interpretationThe tower’s light was a promise that the river would not take the valley unseen",
+        "x": 312.5,
+        "y": 456.859375,
+        "width": 810.3125,
+        "height": 187.109375,
+        "cx": 717.65625,
+        "cy": 550.4140625
+      },
+      {
+        "text": "ScThe ScientistFirst interpretationIts height makes it a useful place to observe flood levels.Their reasoningT",
+        "x": 312.5,
+        "y": 643.96875,
+        "width": 810.3125,
+        "height": 187.109375,
+        "cx": 717.65625,
+        "cy": 737.5234375
+      },
+      {
+        "text": "SThe SoldierFirst interpretationIt guarded the path into the valley. A warning would protect the road as well.",
+        "x": 312.5,
+        "y": 831.078125,
+        "width": 810.3125,
+        "height": 187.109375,
+        "cx": 717.65625,
+        "cy": 924.6328125
+      },
+      {
+        "text": "HThe HistorianFirst interpretationThe path is worn. People kept returning after the first watch was over.Their",
+        "x": 312.5,
+        "y": 1018.1875,
+        "width": 810.3125,
+        "height": 187.109375,
+        "cx": 717.65625,
+        "cy": 1111.7421875
+      },
+      {
+        "text": "The rebuttal round",
+        "x": 312.5,
+        "y": 1237.296875,
+        "width": 227,
+        "height": 32.640625,
+        "cx": 426,
+        "cy": 1253.6171875
+      },
+      {
+        "text": "PThe PriestResponse to the other agentsA flood measure can become a promise when the whole village depends on ",
+        "x": 312.5,
+        "y": 1286.9375,
+        "width": 810.3125,
+        "height": 187.109375,
+        "cx": 717.65625,
+        "cy": 1380.4921875
+      },
+      {
+        "text": "ScThe ScientistResponse to the other agentsThen record the waterline and leave the keeper’s purpose open.Their",
+        "x": 312.5,
+        "y": 1474.046875,
+        "width": 810.3125,
+        "height": 187.109375,
+        "cx": 717.65625,
+        "cy": 1567.6015625
+      },
+      {
+        "text": "What happens next",
+        "x": 1166.8125,
+        "y": -1136.109375,
+        "width": 405.6875,
+        "height": 26.390625,
+        "cx": 1369.65625,
+        "cy": -1122.9140625
+      }
+    ],
+    "images": [
+      {
+        "src": "http://127.0.0.1:5173/art/world-watchtower.webp",
+        "complete": true,
+        "naturalWidth": 1536,
+        "naturalHeight": 1024
+      }
+    ],
+    "width": 1920,
+    "height": 1818
+  },
+  "04-chronicle": {
+    "scrollY": 1189,
+    "controls": {
+      "messenger": null,
+      "photo": null,
+      "begin": null
+    },
+    "regions": [
+      {
+        "text": "The chronicle",
+        "x": 312.5,
+        "y": -991.109375,
+        "width": 291,
+        "height": 46.078125,
+        "cx": 458,
+        "cy": -968.0703125
+      },
+      {
+        "text": "Chronicle complete",
+        "x": 333.5,
+        "y": -850.25,
+        "width": 184,
+        "height": 26.390625,
+        "cx": 425.5,
+        "cy": -837.0546875
+      },
+      {
+        "text": "Historian’s chroniclemajorityThe tower watched the river, though no one agrees what warning it gave.The counci",
+        "x": 312.5,
+        "y": 0.5,
+        "width": 810.3125,
+        "height": 506.4375,
+        "cx": 717.65625,
+        "cy": 253.71875
+      },
+      {
+        "text": "The tower watched the river, though no one agrees what warning it gave.",
+        "x": 336.5,
+        "y": 64.6875,
+        "width": 762.3125,
+        "height": 92.15625,
+        "cx": 717.65625,
+        "cy": 110.765625
+      },
+      {
+        "text": "What changed",
+        "x": 312.5,
+        "y": 506.9375,
+        "width": 810.3125,
+        "height": 46.078125,
+        "cx": 717.65625,
+        "cy": 529.9765625
+      },
+      {
+        "text": "Culture carried into this discovery",
+        "x": 312.5,
+        "y": 797.578125,
+        "width": 810.3125,
+        "height": 46.078125,
+        "cx": 717.65625,
+        "cy": 820.6171875
+      },
+      {
+        "text": "What happens next",
+        "x": 1166.8125,
+        "y": -971.109375,
+        "width": 405.6875,
+        "height": 26.390625,
+        "cx": 1369.65625,
+        "cy": -957.9140625
+      }
+    ],
+    "images": [
+      {
+        "src": "http://127.0.0.1:5173/art/world-watchtower.webp",
+        "complete": true,
+        "naturalWidth": 1536,
+        "naturalHeight": 1024
+      }
+    ],
+    "width": 1920,
+    "height": 1099
+  }
+}
