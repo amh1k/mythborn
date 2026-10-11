@@ -12,6 +12,7 @@ export interface Game {
   review_photo_description?: boolean
   created_at: string
   archived_at?: string | null
+  last_chronicle?: Pick<Chronicle, 'id' | 'round_id' | 'title' | 'verdict' | 'created_at'> | null
   latest_episode?: EpisodeSummary | null
 }
 export interface Agent {
@@ -72,6 +73,7 @@ export interface AdminAccount {
   created_at: string
 }
 export interface Chronicle {
+  title?: string
   id: string
   round_id: string
   outcome: 'consensus' | 'majority' | 'unresolved'
@@ -94,7 +96,11 @@ export interface EpisodeSummary {
   error_code?: string
   error_message?: string
 }
+export interface SavedChange {
+  id: string; kind: string; name: string; before?: string; after: string; before_state?: string; after_state: string; reason: string
+}
 export interface Episode extends EpisodeSummary {
+  changes?: SavedChange[]
   description?: string
   description_status?: 'pending' | 'awaiting_review' | 'uncertain' | 'accepted'
   photo_url?: string
@@ -126,6 +132,11 @@ export interface DebateDetail {
   state: 'waiting' | 'live' | 'unavailable' | 'finished'
   player_role: PlayerRole
   preview: DebatePreview | null
+}
+export interface DebateProgress {
+  preview: DebatePreview | null
+  unavailable: boolean
+  now: number
 }
 export interface HistoryItem extends Chronicle {
   round_kind?: 'discovery' | 'council' | 'closing'

@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, Navigate, NavLink, Outlet, Route, Routes, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from './auth'
 import { api, ApiError, asArray } from './lib/api'
@@ -6,23 +6,17 @@ import { supabase } from './lib/supabase'
 import { Sigil } from './components/sigil'
 import { BrandMark } from './components/brand-mark'
 import { ThemeToggle } from './theme'
-import { AtlasHero } from './components/atlas-hero'
-import { LiveDebate } from './components/live-debate'
-import { RoundProgress } from './components/round-progress'
+import { Badge, Empty, ErrorNotice, Loading } from './components/ui'
+import { usePolling } from './lib/use-polling'
 import { isFinished, isPaused, roundLabel, stageLabel } from './lib/episode-progress'
-import { worldArtwork } from './lib/world-art'
-import type { AdminAccount, Agent, AgentTemplate, Belief, ConversationSummary, Episode, EpisodeSummary, Game, HistoryItem, InitialBeliefTemplate, PlayerRole, Tradition } from './types'
+import type { AdminAccount, Agent, AgentTemplate, Belief, ConversationSummary, EpisodeSummary, Game, HistoryItem, InitialBeliefTemplate, PlayerRole, Tradition } from './types'
+
+const EpisodePage = lazy(() => import('./pages/episode').then(page => ({ default: page.EpisodePage })))
 
 const roleNames: Record<PlayerRole, string> = { observer: 'Observer', god: 'God', messenger: 'Messenger' }
 const agentNames: Record<string, string> = { priest: 'The Priest', scientist: 'The Scientist', soldier: 'The Soldier', historian: 'The Historian' }
 
 function useToken() { return useAuth().session?.access_token ?? '' }
-function ErrorNotice({ error }: { error: unknown }) {
-  return <div className="notice notice-error" role="alert">{error instanceof Error ? error.message : 'Something went wrong. Please try again.'}</div>
-}
-function Loading({ label = 'Loading…' }: { label?: string }) { return <p className="loading" role="status">{label}</p> }
-function Empty({ children }: { children: ReactNode }) { return <div className="empty-state surface-subtle">{children}</div> }
-function Badge({ children, state = 'active' }: { children: ReactNode; state?: 'active' | 'complete' | 'attention' }) { return <span className="status-pill" data-state={state}>{children}</span> }
 
 function App() {
   const { user, loading, configured } = useAuth()
@@ -35,7 +29,7 @@ function App() {
       <Route path="/worlds" element={<WorldList />} />
       <Route path="/worlds/new" element={<CreateWorld />} />
       <Route path="/worlds/:worldId" element={<WorldPage />} />
-      <Route path="/episodes/:episodeId" element={<EpisodePage />} />
+      <Route path="/episodes/:episodeId" element={<Suspense fallback={<Loading label="Opening this discovery…" />}><EpisodePage /></Suspense>} />
       <Route path="/admin/*" element={<AdminPortal />} />
     </Route>
     <Route path="*" element={<Navigate to={user ? '/worlds' : '/sign-in'} replace />} />
@@ -107,7 +101,7 @@ function WorldList() {
   const token = useToken(); const [games, setGames] = useState<Game[]>([]); const [loading, setLoading] = useState(true); const [error, setError] = useState<unknown>(null)
   useEffect(() => { let alive = true; void api.worlds(token).then(v => { if (alive) setGames(asArray(v, 'worlds')) }).catch(e => alive && setError(e)).finally(() => alive && setLoading(false)); return () => { alive = false } }, [token])
   const active = games.filter(g => !['archived', 'deleting'].includes(g.status)); const archives = games.filter(g => g.status === 'archived')
-  return <><AtlasHero />
+  return <><div className="page-heading"><div><p className="eyebrow">Your field journals</p><h1>Civilizations</h1></div><Link className="button" to="/worlds/new">New civilization</Link></div>
     {error !== null && <ErrorNotice error={error} />}{loading ? <Loading label="Gathering your worlds…" /> : !error && games.length === 0 ? <section className="welcome-card"><div className="welcome-illustration"><Sigil /></div><div><p className="eyebrow">No civilizations yet</p><h2>The first chapter is unwritten.</h2><p className="text-muted">Name a civilization and choose your role. Its story begins with your first photograph.</p></div><Link className="button button-secondary" to="/worlds/new">Create your first world <span aria-hidden="true">→</span></Link></section> : !error && <>
       <section className="world-section"><div className="section-heading"><h2>In progress</h2><span>{active.length} {active.length === 1 ? 'world' : 'worlds'}</span></div>{active.length ? <div className="world-grid">{active.map(game => <WorldCard key={game.id} game={game} />)}</div> : <Empty>No civilizations in progress. Start a new one when you’re ready.</Empty>}</section>
       {archives.length > 0 && <section className="world-section"><div className="section-heading"><h2>Archives</h2><span>{archives.length}</span></div><div className="world-grid">{archives.map(game => <WorldCard key={game.id} game={game} />)}</div></section>}
@@ -115,7 +109,7 @@ function WorldList() {
 }
 function WorldCard({ game }: { game: Game }) {
   const archived = game.status === 'archived'
-  return <Link className="world-card surface-card" to={`/worlds/${game.id}`}><div className="world-cover"><img className="world-cover-art" src={worldArtwork(game.id)} width="1536" height="1024" alt="" loading="lazy" decoding="async" /><span className="world-symbol"><Sigil kind={game.player_role} /></span><span className="world-cover-label">{roleNames[game.player_role]}</span></div><div className="world-card-top"><Badge state={archived ? 'complete' : game.status === 'active' ? 'active' : 'attention'}>{archived ? 'Archived' : game.status.replaceAll('_', ' ')}</Badge></div><h3>{game.name}</h3><p className="text-muted">{roleNames[game.player_role]} · Began {formatDate(game.created_at)}</p>{game.latest_episode?.chronicle && <p className="world-excerpt">“{game.latest_episode.chronicle.verdict}”</p>}<span className="card-link">{archived ? 'Read the archive' : 'Open civilization'} <span aria-hidden="true">→</span></span></Link>
+  return <Link className="world-card surface-card" to={`/worlds/${game.id}`}><span className="world-journal-mark" aria-hidden="true"><Sigil kind={game.player_role} /></span><div className="world-card-top"><Badge state={archived ? 'complete' : game.status === 'active' ? 'active' : 'attention'}>{archived ? 'Archived' : game.status.replaceAll('_', ' ')}</Badge></div><h3>{game.name}</h3><p className="text-muted">{roleNames[game.player_role]} · Began {formatDate(game.created_at)}</p>{game.last_chronicle && <div className="world-excerpt"><p className="eyebrow">{game.last_chronicle.title}</p><p>“{game.last_chronicle.verdict}”</p></div>}<span className="card-link">{archived ? 'Read the archive' : 'Open civilization'} <span aria-hidden="true">→</span></span></Link>
 }
 function CreateWorld() {
   const token = useToken(); const navigate = useNavigate(); const [name, setName] = useState(''); const [role, setRole] = useState<PlayerRole>('observer'); const [busy, setBusy] = useState(false); const [error, setError] = useState<unknown>(null)
@@ -145,7 +139,7 @@ function WorldPage() {
   }, [game?.status, worldId, token])
   if (loading) return <Loading label="Opening this civilization…" />
   if (error || !game) return <ErrorNotice error={error ?? new Error('This world could not be found.')} />
-  return <><Link className="back-link" to="/worlds">← All worlds</Link><div className="world-banner" style={{ backgroundImage: `url(${worldArtwork(game.id)})` }}><div><p className="eyebrow">{roleNames[game.player_role]} civilization</p><h1>{game.name}</h1><span className="world-founded">Founded {formatDate(game.created_at)}</span></div><Badge state={game.status === 'active' ? 'active' : game.status === 'archived' ? 'complete' : 'attention'}>{game.status.replaceAll('_', ' ')}</Badge></div>{resourceError !== null && <ErrorNotice error={resourceError} />}
+  return <><Link className="back-link" to="/worlds">← All worlds</Link><div className="page-heading world-journal-heading"><div><p className="eyebrow">{roleNames[game.player_role]} civilization</p><h1>{game.name}</h1><span className="world-founded">Founded {formatDate(game.created_at)}</span></div><Badge state={game.status === 'active' ? 'active' : game.status === 'archived' ? 'complete' : 'attention'}>{game.status.replaceAll('_', ' ')}</Badge></div>{resourceError !== null && <ErrorNotice error={resourceError} />}
     <nav className="world-tabs" aria-label="Civilization sections">{(['home','rounds','agents','culture','history','settings'] as const).map(item => <button key={item} className={tab === item ? 'tab active' : 'tab'} aria-current={tab === item ? 'page' : undefined} onClick={() => setTab(item)}>{({home:'Overview',rounds:'Rounds',agents:'Agents',culture:'Culture',history:'History',settings:'Settings'})[item]}</button>)}</nav>
     <WorldRounds key={game.id} game={game} token={token} expanded={tab === 'rounds'} onRoundComplete={refresh} />
     {tab === 'home' && <Overview game={game} history={history} token={token} onRefresh={refresh} />}{tab === 'agents' && <AgentsPanel agents={agents} game={game} history={history} token={token} />}{tab === 'culture' && <CulturePanel traditions={traditions} />}{tab === 'history' && <HistoryPanel history={history} />}{tab === 'settings' && <SettingsPanel game={game} token={token} onRefresh={refresh} />}</>
@@ -155,29 +149,19 @@ function WorldRounds({ game, token, expanded, onRoundComplete }: { game: Game; t
   const [rounds, setRounds] = useState<EpisodeSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<unknown>(null)
-  useEffect(() => {
-    const controller = new AbortController()
-    let timer: number | undefined
-    let previous: EpisodeSummary[] | undefined
-    async function poll() {
-      try {
-        const latest = await api.episodes(token, game.id, controller.signal)
-        if (controller.signal.aborted) return
-        const completed = previous?.some(old => !isFinished(old) && latest.some(next => next.id === old.id && next.status === 'complete'))
-        previous = latest
-        setRounds(latest); setError(null)
-        if (completed) void onRoundComplete().catch(() => undefined)
-      } catch (e) { if (!controller.signal.aborted) setError(e) }
-      finally {
-        if (!controller.signal.aborted) {
-          setLoading(false)
-          if (!['archived', 'deleting'].includes(game.status)) timer = window.setTimeout(() => void poll(), 2000)
-        }
-      }
-    }
-    void poll()
-    return () => { controller.abort(); if (timer) window.clearTimeout(timer) }
-  }, [game.id, game.status, token])
+  const previous = useRef<EpisodeSummary[] | undefined>(undefined)
+  usePolling(`${game.id}/${game.status}/${token}`, async signal => {
+    try {
+      const latest = await api.episodes(token, game.id, signal)
+      if (signal.aborted) return false
+      const completed = previous.current?.some(old => !isFinished(old) && latest.some(next => next.id === old.id && next.status === 'complete'))
+      previous.current = latest
+      setRounds(latest); setError(null)
+      if (completed) void onRoundComplete().catch(() => undefined)
+      return !['archived', 'deleting'].includes(game.status)
+    } catch (e) { if (!signal.aborted) setError(e); throw e }
+    finally { if (!signal.aborted) setLoading(false) }
+  })
   const open = rounds.filter(round => !isFinished(round))
   if (!expanded && !loading && !error && !open.length) return null
   return <section className="world-rounds section-block" aria-labelledby="rounds-heading">
@@ -197,10 +181,10 @@ function Overview({ game, history, token, onRefresh }: { game: Game; history: Hi
   async function submit(e: FormEvent) { e.preventDefault(); if (!file) return; setBusy(true); setError(null); setDuplicateId(''); try { const form = new FormData(); form.set('photo', file); if (game.player_role !== 'observer' && statement) form.set('player_statement', statement); form.set('allow_reuse', String(reuse)); form.set('idempotency_key', crypto.randomUUID()); const accepted = await api.submitObservation(token, game.id, form); window.location.href = `/episodes/${accepted.episode_id}` } catch (caught) { if (caught instanceof ApiError && caught.status === 409) setDuplicateId(caught.message); else setError(caught) } finally { setBusy(false) } }
   return <div className="overview-grid"><div className="overview-main"><section className="discovery-card surface-card"><div className="discovery-icon"><Sigil kind="camera" /></div><p className="eyebrow">The next discovery</p><h2>Bring the world a discovery.</h2><p className="text-muted">A photo begins a conversation among your four agents. Any photo is welcome, whether or not it follows a suggestion.</p>
       {history[0]?.suggestion && <div className="suggestion surface-subtle"><span className="eyebrow">A thought from the historian</span><p>“{history[0].suggestion}”</p></div>}
-      {canObserve ? <form className="observation-form" onSubmit={submit}><label className="upload-zone"><input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={e => setFile(e.target.files?.[0] ?? null)} /><span className="upload-symbol" aria-hidden="true">+</span><strong>{file ? file.name : 'Take a photo or choose one'}</strong><small>JPEG, PNG, or WebP · up to 10 MB</small></label>
+      {canObserve ? <form className="observation-form" onSubmit={submit}><label className="upload-zone"><input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={e => setFile(e.target.files?.[0] ?? null)} /><span className="upload-symbol" aria-hidden="true">+</span><strong>{file ? file.name : 'Take a photo or choose one'}</strong><small>JPEG, PNG, or WebP · up to 10 MB / 24 megapixels</small></label>
        {game.player_role !== 'observer' && <div><label htmlFor="statement">{game.player_role === 'god' ? 'Your proclamation' : 'Your testimony'} <span className="optional">(optional)</span></label><textarea id="statement" maxLength={1200} value={statement} onChange={e => setStatement(e.target.value)} placeholder={game.player_role === 'god' ? 'Tell your agents what this sign means…' : 'Share what you noticed or what you know…'} /></div>}
       {error !== null && <ErrorNotice error={error} />}{duplicateId && <div className="notice notice-error" role="alert">{duplicateId}<div className="duplicate-actions"><label className="inline-check"><input type="checkbox" checked={reuse} onChange={e => setReuse(e.target.checked)} /> Submit this same image as a new discovery</label></div></div>}
-       <button className="button" disabled={!file || busy}>{busy ? 'Starting discovery…' : 'Begin discovery'}</button><p className="text-small text-muted">Your photo is processed by an external AI service to create a neutral description. Location metadata is not used.</p>
+       <button className="button" disabled={!file || busy}>{busy ? 'Starting discovery…' : 'Begin discovery'}</button><p className="text-small text-muted">Your photo is processed by an external AI service to create a neutral description. Orientation is corrected and metadata is removed. Only a resized copy is stored.</p>
       </form> : <Empty>This civilization is {game.status === 'archived' ? 'archived and read-only' : game.status.replaceAll('_', ' ')}. New observations are unavailable.</Empty>}</section>
       <section className="section-block"><div className="section-heading"><h2>Recent chronicles</h2><button className="text-button" onClick={() => void onRefresh()}>Refresh</button></div><HistoryPanel history={history.slice(0, 3)} compact /></section>
     </div><aside className="overview-aside"><div className="surface-card aside-card"><p className="eyebrow">Your companions</p><h3>Four ways of seeing</h3>{(['priest','scientist','soldier','historian'] as const).map(type => <div className="agent-mini" key={type}><span className={`agent-avatar ${type}`} aria-hidden="true"><Sigil kind={type} /></span><span><strong>{agentNames[type]}</strong><small>{{priest:'Meaning & ritual',scientist:'Evidence & patterns',soldier:'Safety & survival',historian:'Memory & continuity'}[type]}</small></span></div>)}<span className="aside-footnote">Each keeps a distinct memory of this world.</span></div>
@@ -249,52 +233,6 @@ function SettingsPanel({ game, token, onRefresh }: { game: Game; token: string; 
   </div>
 }
 
-function EpisodePage() {
-  const { episodeId = '' } = useParams(); const token = useToken(); const [episode, setEpisode] = useState<Episode | null>(null); const [loading, setLoading] = useState(true); const [error, setError] = useState<unknown>(null); const [busy, setBusy] = useState(false); const [correction, setCorrection] = useState(''); const [photo, setPhoto] = useState(''); const [commandId, setCommandId] = useState('')
-  const reload = () => api.episode(token, episodeId).then(next => { setEpisode(next); return next })
-  const episodeStatus = episode?.id === episodeId ? episode.status : undefined
-  useEffect(() => { setEpisode(null); setLoading(true); setPhoto(''); setCommandId('') }, [episodeId])
-  useEffect(() => {
-    if (episodeStatus && ['complete', 'failed', 'abandoned', 'needs_attention'].includes(episodeStatus)) return
-    const controller = new AbortController()
-    let timer: number | undefined
-    async function fetchEpisode() {
-      try {
-        const next = await api.episode(token, episodeId, controller.signal)
-        if (controller.signal.aborted) return
-        setEpisode(next); setError(null)
-        if (next.observation_id) void api.photoUrl(token, next.observation_id).then(v => { if (!controller.signal.aborted) setPhoto(v.url) }).catch(() => undefined)
-      } catch (e) { if (!controller.signal.aborted) setError(e) }
-      finally {
-        if (!controller.signal.aborted) { setLoading(false); timer = window.setTimeout(() => void fetchEpisode(), 2000) }
-      }
-    }
-    void fetchEpisode()
-    return () => { controller.abort(); if (timer) window.clearTimeout(timer) }
-  }, [episodeId, token, episodeStatus])
-  async function decision(payload: Parameters<typeof api.descriptionDecision>[2]) { setBusy(true); setError(null); try { const result = await api.descriptionDecision(token, episodeId, payload); if (result.command_id) setCommandId(result.command_id); await reload() } catch (e) { setError(e) } finally { setBusy(false) } }
-  async function retry() { setBusy(true); setError(null); try { const result = await api.retryEpisode(token, episodeId); if (result.command_id) setCommandId(result.command_id); await reload() } catch (e) { setError(e) } finally { setBusy(false) } }
-  if (loading) return <Loading label="Reconnecting to this discovery…" />
-  if (error && !episode) return <><Link className="back-link" to="/worlds">← Your worlds</Link><ErrorNotice error={error} /></>
-  if (!episode) return <ErrorNotice error={new Error('This discovery could not be found.')} />
-  const done = episode.status === 'complete'
-  return <><Link className="back-link" to={episode.game_id ? `/worlds/${episode.game_id}` : "/worlds"}>← Back to civilization</Link><div className="episode-layout"><main className="episode-main"><div className="page-heading episode-heading"><div><p className="eyebrow">{roundLabel(episode)} · {formatDate(episode.created_at)}</p><h1>{done ? 'The chronicle' : 'A discovery is unfolding'}</h1></div><Badge state={done ? 'complete' : ['failed','needs_attention'].includes(episode.status) ? 'attention' : 'active'}>{stageLabel(episode)}</Badge></div>
-    <RoundProgress episode={episode} watchLink />
-    {photo && <img className="episode-photo" src={photo} alt="Your submitted observation" />}
-    {episode.description && <section className="evidence-card surface-subtle"><span className="eyebrow">Shared photo description</span><p>{episode.description}</p>{episode.description_status === 'awaiting_review' && <span className="text-small text-muted">This description is waiting for your review.</span>}</section>}
-    {episode.stage === 'awaiting_review' && <section className="decision-card surface-card"><h2>Does this match what you see?</h2><p className="text-muted">Correct visible details if needed. Meaning and interpretation are for you and your agents to explore.</p><label htmlFor="correction">Correct the description <span className="optional">(optional)</span></label><textarea id="correction" value={correction} maxLength={1800} onChange={e => setCorrection(e.target.value)} placeholder="For example: the object in the lower corner is a seed, not a stone." />{error !== null && <ErrorNotice error={error} />}<div className="form-actions"><button className="button button-secondary" disabled={busy} onClick={() => void decision({ decision:'accept' })}>Accept description</button><button className="button" disabled={busy || !correction.trim()} onClick={() => void decision({ decision:'correct', player_correction: correction.trim() })}>Save correction</button></div></section>}
-    {episode.stage === 'awaiting_clarity_choice' && <section className="decision-card surface-card"><h2>The photo is hard to read</h2><p className="text-muted">The description is uncertain. You can still continue, and agents will be asked not to treat uncertain details as fact.</p>{error !== null && <ErrorNotice error={error} />}<div className="form-actions"><button className="button button-secondary" disabled={busy} onClick={() => void decision({ decision:'choose_clarity', clarity_choice:'try_another_photo' })}>Try another photo</button><button className="button" disabled={busy} onClick={() => void decision({ decision:'choose_clarity', clarity_choice:'continue_uncertain' })}>Continue with uncertainty</button></div></section>}
-    {error !== null && episode && !['awaiting_review','awaiting_clarity_choice'].includes(episode.stage) && <ErrorNotice error={error} />}
-    {commandId && <p className="text-small text-muted" role="status">Command {commandId} accepted. Reconnecting to progress…</p>}
-    {(['failed','needs_attention'].includes(episode.status)) && <section className="attention-card"><h2>This discovery needs another try</h2><p>{episode.error_message ?? 'Processing paused before the chronicle was saved. Your evidence remains safe.'}</p>{error !== null && <ErrorNotice error={error} />}<button className="button" disabled={busy} onClick={() => void retry()}>{busy ? 'Retrying…' : 'Retry discovery'}</button></section>}
-    <LiveDebate key={episode.id} episode={episode} token={token} />
-    {episode.chronicle && <ChronicleDetail chronicle={episode.chronicle} />}
-    {episode.status === 'abandoned' && <Empty>This photo was set aside. No beliefs or traditions changed.</Empty>}
-    </main><aside className="episode-aside"><div className="surface-card aside-card"><p className="eyebrow">One story, four voices</p><h3>What happens next</h3><p className="text-muted">Each agent reacts to the same shared evidence, then they respond to one another. Their debate is temporary. Your historian saves the verdict and meaningful dissent.</p><div className="aside-rule" /><p className="text-small text-muted">A split or unresolved disagreement still completes the discovery.</p></div></aside></div></>
-}
-function ChronicleDetail({ chronicle }: { chronicle: NonNullable<Episode['chronicle']> }) {
-  return <article className="chronicle-detail surface-card"><div className="chronicle-meta"><span className="eyebrow">Historian’s chronicle</span><Badge state={chronicle.outcome === 'unresolved' ? 'attention' : 'complete'}>{chronicle.outcome}</Badge></div><h2>{chronicle.verdict}</h2><div className="chronicle-body">{chronicle.body.split('\n').filter(Boolean).map((paragraph, i) => <p key={i}>{paragraph}</p>)}</div>{chronicle.suggestion && <div className="suggestion surface-subtle"><span className="eyebrow">If you feel curious</span><p>{chronicle.suggestion}</p></div>}</article>
-}
 
 function AdminPortal() {
   const [section, setSection] = useState<'templates'|'accounts'|'games'>('templates')

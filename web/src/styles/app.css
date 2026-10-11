@@ -178,6 +178,11 @@
 .progress-heading { display: flex; align-items: center; justify-content: space-between; }
 .progress-heading h2 { margin: .25rem 0 var(--space-4); font-size: var(--text-xl); }
 .live-dot { width: .7rem; aspect-ratio: 1; border-radius: 50%; background: var(--color-moss); box-shadow: 0 0 0 .3rem var(--color-moss-soft); }
+.activity-indicator { display: inline-block; flex: 0 0 auto; width: 1rem; height: 1rem; border: 2px solid var(--border-subtle); border-top-color: var(--text-secondary); border-radius: 50%; animation: activity-turn 1s linear infinite; }
+.debate-agents .agent-progress-status, .debate-state { display: flex; align-items: center; gap: .5rem; }
+.agent-progress-status .activity-indicator { width: .75rem; height: .75rem; }
+@keyframes activity-turn { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .activity-indicator { animation: none; } }
 .progress-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-2); padding: 0; margin: 0 0 var(--space-4); list-style: none; }
 .progress-steps li { display: grid; justify-items: center; gap: var(--space-2); color: var(--text-secondary); font-size: var(--text-xs); text-align: center; }
 .step-mark { display: grid; width: 2rem; aspect-ratio: 1; place-items: center; border: 1px solid var(--border-subtle); border-radius: 50%; background: var(--surface-subtle); }
@@ -440,3 +445,23 @@ h1 em, .creation-plate h2 em { font-style: normal; color: #e6bc7a; }
   .atlas-scene img { animation: none; }
   .world-card:hover .world-cover-art { transform: none; }
 }
+
+/* Field journal: evidence and testimony carry the page. */
+.episode-layout { display: block; max-width: 52rem; margin-inline: auto; }
+.episode-heading { margin-bottom: var(--space-5); }
+.episode-heading h1 { font-size: clamp(1.65rem, 4vw, 2.4rem); }
+.episode-photo { max-height: 27rem; object-fit: contain; background: var(--surface-subtle); }
+.progress-card { padding: var(--space-4) 0; border: 0; border-block: 1px solid var(--border-subtle); background: transparent; box-shadow: none; }
+.progress-heading h2 { font-size: var(--text-base); font-weight: 600; }
+.progress-heading .eyebrow, .progress-card > .text-small { display: none; }
+.progress-explanation { font-size: var(--text-sm); margin-bottom: 0; }
+.progress-steps { margin-block: var(--space-3); }
+.progress-card > .button { padding: .4rem 0; background: transparent; border: 0; text-decoration: underline; }
+.round-control { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); margin-block: var(--space-3); }
+.error-reference { display: block; margin-top: .5rem; overflow-wrap: anywhere; }
+.world-journal-mark { display: block; width: 2.5rem; height: 2.5rem; margin-top: var(--space-5); color: var(--accent-primary); }
+.world-card h3 { font-family: var(--font-display); }
+.auth-story h1, .create-story h1 { font-family: var(--font-title); }
+.debate-columns { display: block; }
+.debate-entry { border: 0; border-bottom: 1px solid var(--border-subtle); background: transparent; box-shadow: none; }
+@media (max-width: 40rem) { .progress-steps { gap: .4rem; } .progress-steps li { font-size: .7rem; } .episode-heading { align-items: flex-start; flex-direction: column; gap: .5rem; } }
