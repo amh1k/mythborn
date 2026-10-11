@@ -208,3 +208,13 @@ The API's outbox-only command path means it does **not** need Temporal credentia
 5. **Submission hardening:** latency and quota checks, privacy copy, live-demo rehearsal, screenshots/traces, and the DEV write-up.
 
 These slices are delivery order, not changes to the version 1 behavior in the functional specification. The first slice must prove the defining photo-to-debate-to-chronicle loop before adding more screens or integrations.
+
+## Gameplay continuity extension
+
+The coordinator's versioned `gameplay-continuity/<round-id>` path loads bounded mystery, outgoing relationship, and relevant culture context after photo evidence is accepted. The snapshot and feature switches are checkpointed in `RoundProgress` and reused across retries. Already-generated legacy rounds retain their previous output contract; the legacy version branch does not schedule the new activity. Existing child agent workflows consume optional context fields.
+
+Reactions cite relevant traditions; rebuttals may revise the speaker's own relationships and cite culture. The existing historian call proposes discovery-only mystery changes and selects up to four actual agent culture citations. Deterministic validation handles ownership, IDs, versions, limits, state transitions, and duplicate citations. Existing 3-of-4 tradition voting stays independent. `Store.CommitRound` applies gameplay writes before tradition revisions in the same transaction, so culture influence snapshots retain the version actually seen by agents. No additional generation phase is introduced.
+
+Authenticated, owner-scoped read routes expose mysteries, mystery history, outgoing relationships, relationship history, and tradition detail/history under `/api/v1/worlds`. Revision pages use `after_version`; mystery/influence lists use opaque UUID cursors. These routes expose committed state, are readable in archives, and provide no player mutation operations. Exact JSON and validation errors are documented in `api/openapi.yaml`.
+
+Feature controls are `GAMEPLAY_MYSTERIES_ENABLED`, `GAMEPLAY_RELATIONSHIPS_ENABLED`, and `GAMEPLAY_CULTURE_ENABLED` (default true; set false to disable future generation). Values are frozen per round. Disable flags rather than deleting revision history when rolling back behavior.

@@ -14,6 +14,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/amh1k/mythborn/internal/domain"
+	"github.com/amh1k/mythborn/internal/gameplay"
 	"github.com/amh1k/mythborn/internal/models"
 	"github.com/amh1k/mythborn/internal/retrieval"
 	"github.com/amh1k/mythborn/internal/storage"
@@ -177,12 +178,16 @@ func (a *Activities) GenerateAgentPhase(ctx context.Context, input AgentPhaseInp
 		return workflow.AgentResult{}, err
 	}
 	base := map[string]any{
-		"agent_type": agent.Agent.Type, "agent_name": agent.Agent.DisplayName,
+		"agent_type": agent.Agent.Type, "agent_name": agent.Agent.DisplayName, "player_role": req.PlayerRole,
 		"personality": boundedText(agent.Agent.PersonalityPrompt, 2000), "beliefs": promptBeliefs(agent.Beliefs),
 		"memories": promptMemories(memories), "round_kind": req.RoundKind,
 		"editorial_standard": editorialInstruction, "character_habits": characterHabit(agent.Agent.Type),
 		"description": "", "player_statement": "", "player_correction": "",
-		"current_traditions": promptTraditions(req.Traditions),
+		"current_traditions": contextualTraditions(req.Traditions, req.Gameplay),
+		"gameplay_context":   gameplayPrompt(req.Gameplay, req.Agent.Agent.ID),
+	}
+	if req.Gameplay != nil && req.Gameplay.ContractVersion > 0 {
+		base["gameplay_rules"] = gameplayAgentInstruction
 	}
 	if req.Observation != nil {
 		base["description"] = req.Observation.VisualDescription
@@ -190,8 +195,11 @@ func (a *Activities) GenerateAgentPhase(ctx context.Context, input AgentPhaseInp
 		base["player_correction"] = req.Observation.PlayerCorrection
 	}
 	result := workflow.AgentResult{RequestID: req.RequestID}
+	if req.Gameplay != nil && req.Gameplay.ContractVersion > 0 {
+		fitGameplayPrompt(base)
+	}
 	if req.Phase == "reaction" {
-		prompt := fmt.Sprintf("You are a persistent character in a small civilization. Stay in character but distinguish visible evidence from claims and memory. Make one interpretation and, if meaningful, raise up to two candidate myths, rituals, or taboos. Existing traditions should be raised for reconsideration only when this event is relevant; if doing so, include the exact tradition_id from current_traditions. Return JSON: {\"interpretation\":\"...\",\"reasoning\":\"...\",\"tradition_ideas\":[{\"tradition_id\":null,\"type\":\"myth|ritual|taboo\",\"title\":\"...\",\"description\":\"...\"}]}. For an existing tradition, set its actual tradition_id and keep its type/title/description. Input: %s", encodePrompt(base))
+		prompt := fmt.Sprintf("You are a persistent character in a small civilization. Stay in character but distinguish visible evidence from claims and memory. Make one interpretation and, if meaningful, raise up to two candidate myths, rituals, or taboos. Existing traditions should be raised for reconsideration only when this event is relevant; if doing so, include the exact tradition_id from current_traditions. Return JSON: {\"interpretation\":\"...\",\"reasoning\":\"...\",\"tradition_ideas\":[{\"tradition_id\":null,\"type\":\"myth|ritual|taboo\",\"title\":\"...\",\"description\":\"...\"}]}. For an existing tradition, set its actual tradition_id and keep its type/title/description. Include any enabled fields required by gameplay_rules in the JSON output. Input: %s", encodePrompt(base))
 		var output workflow.AgentReaction
 		if err = a.Models.GenerateJSON(ctx, prompt, nil, "", &output); err != nil {
 			return result, err
@@ -202,6 +210,10 @@ func (a *Activities) GenerateAgentPhase(ctx context.Context, input AgentPhaseInp
 		if err = validateReaction(output, req.Traditions); err != nil {
 			return result, err
 		}
+		stampInfluences(output.Influences, req.Agent.Agent.ID, req.Traditions)
+		if err = validateGameplayAgent(req, nil, output.Influences); err != nil {
+			return result, err
+		}
 		result.Reaction = &output
 		return result, nil
 	}
@@ -210,7 +222,10 @@ func (a *Activities) GenerateAgentPhase(ctx context.Context, input AgentPhaseInp
 	}
 	base["reactions"] = req.Reactions
 	base["candidates"] = req.Candidates
-	prompt := fmt.Sprintf("You are rebutting once after hearing the same evidence and four initial reactions. Return JSON with response; optional belief_proposals [{belief_id, change_type, new_claim, new_state, reason}] (omit belief_id only for a new belief with change_type formed); tradition_support with exactly one vote for every candidate [{candidate_key, tradition_id, support, reason}] (copy candidate_key for new ideas, tradition_id for existing); and optional new_tradition_ideas [{type,title,description}] only for the chronicle to mention later, do not vote these. Set support to true or false. Keep disagreements respectful and explain each vote. Input: %s", encodePrompt(base))
+	if req.Gameplay != nil && req.Gameplay.ContractVersion > 0 {
+		fitGameplayPrompt(base)
+	}
+	prompt := fmt.Sprintf("You are rebutting once after hearing the same evidence and four initial reactions. Return JSON with response; optional belief_proposals [{belief_id, change_type, new_claim, new_state, reason}] (omit belief_id only for a new belief with change_type formed); tradition_support with exactly one vote for every candidate [{candidate_key, tradition_id, support, reason}] (copy candidate_key for new ideas, tradition_id for existing); and optional new_tradition_ideas [{type,title,description}] only for the chronicle to mention later, do not vote these. Set support to true or false. Keep disagreements respectful and explain each vote. Include any enabled fields required by gameplay_rules in the JSON output. Input: %s", encodePrompt(base))
 	var output workflow.AgentRebuttal
 	if err = a.Models.GenerateJSON(ctx, prompt, nil, "", &output); err != nil {
 		return result, err
@@ -220,16 +235,25 @@ func (a *Activities) GenerateAgentPhase(ctx context.Context, input AgentPhaseInp
 	if err = validateRebuttal(output, req.Candidates, agent); err != nil {
 		return result, err
 	}
+	for i := range output.RelationshipProposals {
+		output.RelationshipProposals[i].FromAgentID = req.Agent.Agent.ID
+	}
+	stampInfluences(output.Influences, req.Agent.Agent.ID, req.Traditions)
+	if err = validateGameplayAgent(req, output.RelationshipProposals, output.Influences); err != nil {
+		return result, err
+	}
 	result.Rebuttal = &output
 	return result, nil
 }
 
 type HistorianInput struct {
-	Context       workflow.RoundContext      `json:"context"`
-	Reactions     []workflow.AgentReaction   `json:"reactions,omitempty"`
-	Rebuttals     []workflow.AgentRebuttal   `json:"rebuttals,omitempty"`
-	BeliefChanges []workflow.BeliefProposal  `json:"belief_changes,omitempty"`
-	Traditions    []workflow.TraditionChange `json:"traditions,omitempty"`
+	RelationshipChanges []gameplay.RelationshipProposal `json:"relationship_changes,omitempty"`
+	CultureCitations    []gameplay.Influence            `json:"culture_citations,omitempty"`
+	Context             workflow.RoundContext           `json:"context"`
+	Reactions           []workflow.AgentReaction        `json:"reactions,omitempty"`
+	Rebuttals           []workflow.AgentRebuttal        `json:"rebuttals,omitempty"`
+	BeliefChanges       []workflow.BeliefProposal       `json:"belief_changes,omitempty"`
+	Traditions          []workflow.TraditionChange      `json:"traditions,omitempty"`
 }
 
 func (a *Activities) WriteHistorianRecord(ctx context.Context, input HistorianInput) (out workflow.HistorianRecord, err error) {
@@ -245,8 +269,18 @@ func (a *Activities) WriteHistorianRecord(ctx context.Context, input HistorianIn
 		return workflow.HistorianRecord{}, fmt.Errorf("historian agent is missing")
 	}
 	promptData := map[string]any{"historian_name": historian.Agent.DisplayName, "personality": boundedText(historian.Agent.PersonalityPrompt, 2000), "beliefs": promptBeliefs(historian.Beliefs), "memories": promptMemories(memories), "evidence": evidenceText(input.Context), "world_name": input.Context.Game.Name, "current_traditions": promptTraditions(input.Context.Traditions), "reactions": input.Reactions, "rebuttals": input.Rebuttals, "belief_changes": input.BeliefChanges, "tradition_changes": input.Traditions, "editorial_standard": editorialInstruction, "character_habits": characterHabit(domain.AgentTypeHistorian)}
+	if input.Context.Gameplay != nil && input.Context.Gameplay.ContractVersion > 0 {
+		promptData["gameplay_context"] = input.Context.Gameplay
+		promptData["gameplay_rules"] = gameplayHistorianInstruction
+		promptData["relationship_changes"] = input.RelationshipChanges
+		promptData["culture_citations"] = input.CultureCitations
+		promptData["current_traditions"] = contextualTraditions(input.Context.Traditions, input.Context.Gameplay)
+	}
+	if input.Context.Gameplay != nil && input.Context.Gameplay.ContractVersion > 0 {
+		fitGameplayPrompt(promptData)
+	}
 	var output workflow.HistorianRecord
-	prompt := fmt.Sprintf("Write the final chronicle for this %s. Decide outcome as consensus, majority, or unresolved from the agents' expressed interpretations; do not force agreement. Explain the leading interpretation, evidence, important dissent, and actual society changes. For closing records, outcome must be null and suggestion null. Only discovery records may have a short optional outdoor suggestion. Return JSON: {\"title\":\"...\",\"outcome\":\"consensus|majority|unresolved|null\",\"verdict\":\"...\",\"body\":\"...\",\"suggestion\":null}. Input: %s", input.Context.Round.Kind, encodePrompt(promptData))
+	prompt := fmt.Sprintf("Write the final chronicle for this %s. Decide outcome as consensus, majority, or unresolved from the agents' expressed interpretations; do not force agreement. Explain the leading interpretation, evidence, important dissent, and actual society changes. For closing records, outcome must be null and suggestion null. Only discovery records may have a short optional outdoor suggestion. Return JSON: {\"title\":\"...\",\"outcome\":\"consensus|majority|unresolved|null\",\"verdict\":\"...\",\"body\":\"...\",\"suggestion\":null}. Include the enabled arrays required by gameplay_rules. Input: %s", input.Context.Round.Kind, encodePrompt(promptData))
 	if err = a.Models.GenerateJSON(ctx, prompt, nil, "", &output); err != nil {
 		return output, err
 	}
@@ -269,7 +303,14 @@ func (a *Activities) WriteHistorianRecord(ctx context.Context, input HistorianIn
 	if input.Context.Round.Kind == domain.RoundKindClosing {
 		output.Outcome = ""
 	}
+	if err = validateGameplayHistorian(input, output); err != nil {
+		return output, err
+	}
 	output.Metadata = map[string]any{"model": models.DefaultTextModel, "prompt_version": "v2"}
+	if input.Context.Gameplay != nil && input.Context.Gameplay.ContractVersion > 0 {
+		output.Metadata["gameplay_contract"] = input.Context.Gameplay.ContractVersion
+		output.Metadata["prompt_version"] = "v3"
+	}
 	return output, nil
 }
 

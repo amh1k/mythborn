@@ -9,6 +9,7 @@ import (
 
 	"github.com/amh1k/mythborn/internal/activities"
 	"github.com/amh1k/mythborn/internal/domain"
+	"github.com/amh1k/mythborn/internal/gameplay"
 	"github.com/amh1k/mythborn/internal/workflow"
 	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/temporal"
@@ -19,6 +20,7 @@ import (
 func TestRoundResumesRateLimitedCallsWithoutRepeatingSuccessfulAgents(t *testing.T) {
 	var suite testsuite.WorkflowTestSuite
 	env := suite.NewTestWorkflowEnvironment()
+	env.RegisterActivityWithOptions(func(context.Context, workflow.RoundContext) (gameplay.Context, error) { return gameplay.Context{}, nil }, activity.RegisterOptions{Name: "LoadGameplay"})
 	env.RegisterWorkflowWithOptions(Agent, tw.RegisterOptions{Name: workflow.AgentWorkflowName})
 	current := workflow.RoundContext{
 		Game:             domain.Game{ID: "game"},

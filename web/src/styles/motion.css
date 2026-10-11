@@ -1,0 +1,4 @@
+/* Small status motion for the existing interface; all effects respect reduced motion. */
+.loading-mark { display: inline-block; width: .75rem; height: .75rem; margin-inline-end: .6rem; border: 1px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: loading-turn 1s linear infinite; }
+@keyframes loading-turn { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .loading-mark { animation: none; } }

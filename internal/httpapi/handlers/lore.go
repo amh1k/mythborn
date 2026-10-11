@@ -11,6 +11,7 @@ import (
 
 func registerLoreRoutes(mux *http.ServeMux, deps api.Dependencies) {
 	lore := app.Lore{Store: repository.New(deps.DB)}
+	registerGameplayRoutes(mux, deps, lore)
 	wrap := func(fn http.HandlerFunc) http.Handler { return auth.Middleware(deps.Auth, fn) }
 	mux.Handle("GET /api/v1/worlds/{id}/agents", wrap(func(w http.ResponseWriter, r *http.Request) {
 		p, _ := auth.PrincipalFromContext(r.Context())

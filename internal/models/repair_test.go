@@ -90,3 +90,39 @@ func TestInputTokenBudgetUsesRollingMinute(t *testing.T) {
 		t.Fatalf("expired token reservation was not released: %v", err)
 	}
 }
+
+func TestStructuredGenerationReservesRoomForFinalJSON(t *testing.T) {
+	transport := requestTransport(func(r *http.Request) (*http.Response, error) {
+		var input struct {
+			GenerationConfig struct {
+				MaxOutputTokens int32 `json:"maxOutputTokens"`
+			} `json:"generationConfig"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+			t.Fatal(err)
+		}
+		text, finish := `{"response":"A grounded rebuttal"}`, "STOP"
+		if input.GenerationConfig.MaxOutputTokens < 8192 {
+			text = ""
+			finish = "MAX_TOKENS"
+		}
+		response, _ := json.Marshal(map[string]any{"candidates": []any{map[string]any{"finishReason": finish, "content": map[string]any{"parts": []any{map[string]string{"text": text}}}}}})
+		return &http.Response{StatusCode: 200, Header: http.Header{"Content-Type": []string{"application/json"}}, Body: io.NopCloser(strings.NewReader(string(response)))}, nil
+	})
+	client, err := genai.NewClient(context.Background(), &genai.ClientConfig{APIKey: "test-key", Backend: genai.BackendGeminiAPI, HTTPClient: &http.Client{Transport: transport}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	model := Gemini{client: client, model: "test-model", slots: make(chan struct{}, 1)}
+	for _, phase := range []string{"rebuttal", "writing"} {
+		var output struct {
+			Response string `json:"response"`
+		}
+		if err = model.GenerateJSON(WithTrace(context.Background(), Trace{Phase: phase}), "Return JSON", nil, "", &output); err != nil || output.Response == "" {
+			t.Fatalf("%s failed to produce final JSON: %v", phase, err)
+		}
+	}
+	if jsonConfigForPhase("reaction").MaxOutputTokens != 4096 {
+		t.Fatal("short reaction budget unnecessarily increased")
+	}
+}

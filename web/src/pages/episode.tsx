@@ -56,7 +56,7 @@ export function EpisodePage() {
     try { const result = await api.abandonEpisode(token, episodeId); if (result.command_id) setCommandId(result.command_id); setPollVersion(v => v + 1) }
     catch (e) { setError(e) } finally { setBusy(false) }
   }
-  if (loading) return <Loading label="Reconnecting to this discovery…" />
+  if (loading) return <Loading variant="page" label="Opening this discovery" detail="Retrieving its evidence and latest round progress." />
   if (error && !episode) return <><Link className="back-link" to="/worlds">← Your worlds</Link><ErrorNotice error={error} /></>
   if (!episode) return <ErrorNotice error={new Error('This discovery could not be found.')} />
   const done = episode.status === 'complete'
@@ -73,7 +73,8 @@ export function EpisodePage() {
     {!isFinished(episode) && episode.kind !== 'closing' && <div className="round-control"><button className="button button-quiet" disabled={busy || Boolean(commandId)} onClick={() => void abandon()}>{busy ? 'Working…' : 'Set this round aside'}</button><span className="text-small text-muted">Stops this round without saving beliefs or traditions.</span></div>}
     <LiveDebate key={episode.id} episode={episode} token={token} onProgress={setDebateProgress} />
     {episode.chronicle && <ChronicleDetail chronicle={episode.chronicle} />}
-    {done && <section className="saved-changes"><h2>What changed</h2>{episode.changes?.length ? episode.changes.map(change => <article key={change.id} className="saved-change"><p className="eyebrow">{change.kind} · {change.name}</p>{change.before && <p className="text-muted">Before ({change.before_state}): {change.before}</p>}<p>After ({change.after_state}): {change.after}</p><p className="text-small text-muted">{change.reason}</p></article>) : <p className="text-muted">No beliefs or traditions changed in this round.</p>}</section>}
+    {done && <section className="saved-changes"><h2>What changed</h2>{episode.changes?.some(change => change.kind !== 'culture_influence') ? episode.changes.filter(change => change.kind !== 'culture_influence').map(change => <article key={change.id} className="saved-change"><p className="eyebrow">{change.kind} · {change.name}</p>{change.before && <p className="text-muted">Before ({change.before_state}): {change.before}</p>}<p>After ({change.after_state}): {change.after}</p><p className="text-small text-muted">{change.reason}</p></article>) : <p className="text-muted">No lasting changes or culture influences were recorded in this round.</p>}</section>}
+    {done && Boolean(episode.changes?.some(change => change.kind === 'culture_influence')) && <section className="saved-changes"><h2>Culture carried into this discovery</h2>{episode.changes?.filter(change => change.kind === 'culture_influence').map(change => <article className="saved-change" key={change.id}><p className="eyebrow">{change.after_state} · {change.name}</p><p>{change.after}</p><p className="text-small text-muted">{change.reason}</p></article>)}</section>}
     {episode.status === 'abandoned'  && <Empty>This photo was set aside. No beliefs or traditions changed.</Empty>}
     </main><aside className="episode-aside"><div className="surface-card aside-card"><p className="eyebrow">One story, four voices</p><h3>What happens next</h3><p className="text-muted">Each agent reacts to the same shared evidence, then they respond to one another. Their debate is temporary. Your historian saves the verdict and meaningful dissent.</p><div className="aside-rule" /><p className="text-small text-muted">A split or unresolved disagreement still completes the discovery.</p></div></aside></div></>
 }

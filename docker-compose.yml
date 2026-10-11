@@ -1,0 +1,69 @@
+services:
+  temporal-volume-init:
+    image: ${TEMPORAL_DEV_IMAGE:-temporalio/temporal:latest}
+    user: "0:0"
+    entrypoint: ["/bin/sh"]
+    command: ["-c", "chown -R temporal:temporal /var/lib/temporal"]
+    volumes:
+      - temporal-data:/var/lib/temporal
+
+  temporal:
+    image: ${TEMPORAL_DEV_IMAGE:-temporalio/temporal:latest}
+    command:
+      - server
+      - start-dev
+      - --ip
+      - 0.0.0.0
+      - --db-filename
+      - /var/lib/temporal/temporal.db
+    ports:
+      - "7233:7233"
+      - "8233:8233"
+    volumes:
+      - temporal-data:/var/lib/temporal
+    depends_on:
+      temporal-volume-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "temporal", "operator", "cluster", "health", "--address", "localhost:7233"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["/mythborn-api"]
+    env_file: .env
+    environment:
+      HTTP_ADDRESS: :8080
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_NAMESPACE: default
+      TEMPORAL_API_KEY: ""
+    ports:
+      - "8080:8080"
+    depends_on:
+      temporal:
+        condition: service_healthy
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["/mythborn-worker"]
+    env_file: .env
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_NAMESPACE: default
+      TEMPORAL_API_KEY: ""
+    depends_on:
+      temporal:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  temporal-data:

@@ -8,7 +8,12 @@ have responded to the same evidence.
 
 ## Run locally
 
-You need Go 1.26+, Node.js with npm, Python 3, a PostgreSQL database on Tiger
+To run just the API with Docker and your configured root `.env`, use `make api`.
+Use `make backend` to start the API and worker against an existing Temporal
+server. Neither command starts Temporal or the frontend. See
+[LOCAL_DEVELOPMENT.md](./LOCAL_DEVELOPMENT.md) for configuration and stop commands.
+
+For the complete local stack below, you need Go 1.26+, Node.js with npm, Python 3, a PostgreSQL database on Tiger
 Cloud, a Supabase project with Auth and a private photo bucket, a Gemini API
 key, and the Temporal CLI. Local development uses Temporal's free development
 server; it does not need a Temporal Cloud account. See

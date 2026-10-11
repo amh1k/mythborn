@@ -48,23 +48,6 @@ services:
         sync: false
       - key: GEMINI_API_KEY
         sync: false
-  - type: web
-    name: mythborn-web
-    runtime: static
-    buildCommand: cd web && npm ci && npm run build
-    staticPublishPath: web/dist
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
-    envVars:
-      - key: VITE_API_BASE_URL
-        sync: false
-      - key: VITE_SUPABASE_URL
-        sync: false
-      - key: VITE_SUPABASE_PUBLISHABLE_KEY
-        sync: false
-
 envVarGroups:
   - name: mythborn-runtime
     envVars:

@@ -24,7 +24,41 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [preference, setPreference] = useState<Theme | null>(savedTheme)
   const [theme, setTheme] = useState<Theme>(() => savedTheme() ?? systemTheme())
 
-  useEffect(() => { applyTheme(theme) }, [theme])
+  useEffect(() => {
+    const root = document.documentElement
+    // Initial rendering keeps the theme applied by index.html without an animation.
+    if (root.dataset.theme === theme || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      applyTheme(theme)
+      return
+    }
+
+    let cancelled = false
+    if (typeof document.startViewTransition === 'function') {
+      // Crossfade the whole scene, including artwork overlays and gradient surfaces.
+      root.dataset.themeTransition = 'crossfade'
+      const transition = document.startViewTransition(() => {
+        if (!cancelled) applyTheme(theme)
+      })
+      void transition.finished.catch(() => { /* A rapid second toggle may skip this animation. */ }).finally(() => {
+        if (!cancelled) delete root.dataset.themeTransition
+      })
+      return () => {
+        cancelled = true
+        transition.skipTransition()
+        delete root.dataset.themeTransition
+      }
+    }
+
+    // Older browsers still ease the surface, text, border, and icon colors together.
+    root.dataset.themeTransition = 'colors'
+    void root.offsetWidth
+    applyTheme(theme)
+    const timer = window.setTimeout(() => { delete root.dataset.themeTransition }, 650)
+    return () => {
+      window.clearTimeout(timer)
+      delete root.dataset.themeTransition
+    }
+  }, [theme])
 
   useEffect(() => {
     const media = window.matchMedia('(prefers-color-scheme: dark)')
@@ -59,7 +93,7 @@ export function ThemeToggle() {
   const { theme, toggle } = value
   const label = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'
   return <button type="button" className="button button-secondary theme-toggle" onClick={toggle} aria-label={label} title={label}>
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg key={theme} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       {theme === 'dark' ? <><circle cx="12" cy="12" r="4" /><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M19 5l-1.5 1.5m-11 11L5 19" /></> : <path d="M20.5 14a8.5 8.5 0 0 1-10.5-10.5A8.5 8.5 0 1 0 20.5 14Z" />}
     </svg><span>{theme === 'dark' ? 'Light' : 'Dark'}</span>
   </button>

@@ -1038,6 +1038,182 @@ paths:
           $ref: '#/components/responses/InternalError'
         '503':
           $ref: '#/components/responses/AuthenticationUnavailable'
+  /worlds/{id}/mysteries:
+    get:
+      operationId: listMysteries
+      tags:
+      - Lore
+      summary: List open and resolved questions; 25 records per page
+      security:
+      - bearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/WorldId'
+      - name: cursor
+        in: query
+        schema:
+          $ref: '#/components/schemas/UUID'
+        description: next_cursor from the preceding response.
+      - name: state
+        in: query
+        schema:
+          type: string
+          enum:
+          - open
+          - resolved
+      responses:
+        '200':
+          description: Committed gameplay state, readable for active and archived games.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MysteryPage'
+        '422':
+          description: Invalid identifier or pagination value.
+        '401':
+          description: Authentication required.
+        '404':
+          description: World or record unavailable to this account.
+  /worlds/{id}/mysteries/{mystery}:
+    get:
+      operationId: getMystery
+      tags:
+      - Lore
+      summary: Read a mystery and its evidence history; 25 revisions per page
+      security:
+      - bearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/WorldId'
+      - name: mystery
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/UUID'
+      - name: after_version
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+        description: next_version from the preceding response.
+      responses:
+        '200':
+          description: Committed gameplay state, readable for active and archived games.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MysteryDetail'
+        '422':
+          description: Invalid identifier or pagination value.
+        '401':
+          description: Authentication required.
+        '404':
+          description: World or record unavailable to this account.
+  /worlds/{id}/agents/{agent}/relationships:
+    get:
+      operationId: listAgentRelationships
+      tags:
+      - Lore
+      summary: Read an agent’s three outgoing relationships
+      security:
+      - bearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/WorldId'
+      - name: agent
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/UUID'
+      responses:
+        '200':
+          description: Committed gameplay state, readable for active and archived games.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RelationshipPage'
+        '422':
+          description: Invalid identifier or pagination value.
+        '401':
+          description: Authentication required.
+        '404':
+          description: World or record unavailable to this account.
+  /worlds/{id}/agents/{agent}/relationships/{relationship}:
+    get:
+      operationId: getRelationshipHistory
+      tags:
+      - Lore
+      summary: Read relationship revisions; 25 records per page
+      security:
+      - bearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/WorldId'
+      - name: agent
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/UUID'
+      - name: relationship
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/UUID'
+      - name: after_version
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+        description: next_version from the preceding response.
+      responses:
+        '200':
+          description: Committed gameplay state, readable for active and archived games.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameplayRevisionPage'
+        '422':
+          description: Invalid identifier or pagination value.
+        '401':
+          description: Authentication required.
+        '404':
+          description: World or record unavailable to this account.
+  /worlds/{id}/traditions/{tradition}:
+    get:
+      operationId: getTraditionDetail
+      tags:
+      - Lore
+      summary: Read culture history and paginated influence summaries
+      security:
+      - bearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/WorldId'
+      - name: tradition
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/UUID'
+      - name: cursor
+        in: query
+        schema:
+          $ref: '#/components/schemas/UUID'
+        description: next_cursor from the preceding response.
+      - name: after_version
+        in: query
+        schema: {type: integer, minimum: 0, default: 0}
+        description: next_version from the preceding response.
+      responses:
+        '200':
+          description: Committed gameplay state, readable for active and archived games.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TraditionDetail'
+        '422':
+          description: Invalid identifier or pagination value.
+        '401':
+          description: Authentication required.
+        '404':
+          description: World or record unavailable to this account.
+
 components:
   securitySchemes:
     bearerAuth:
@@ -1305,7 +1481,7 @@ components:
       required: [id, kind, name, after, after_state, reason]
       properties:
         id: {$ref: '#/components/schemas/UUID'}
-        kind: {type: string, enum: [belief, tradition]}
+        kind: {type: string, enum: [belief, tradition, mystery, relationship, culture_influence]}
         name: {type: string}
         before: {type: string}
         after: {type: string}
@@ -1517,6 +1693,243 @@ components:
         code:
           type: string
           description: Duplicate of error for compatibility with the current client.
+    Mystery:
+      type: object
+      required:
+      - id
+      - game_id
+      - title
+      - question
+      - state
+      - explanations
+      - evidence_summary
+      - next_observation
+      - origin_round_id
+      - latest_round_id
+      - version
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        game_id:
+          $ref: '#/components/schemas/UUID'
+        title:
+          type: string
+        question:
+          type: string
+        state:
+          type: string
+          enum:
+          - open
+          - resolved
+        explanations:
+          type: array
+          maxItems: 3
+          items:
+            type: object
+            required:
+            - key
+            - claim
+            - agent_ids
+            properties:
+              key:
+                type: string
+              claim:
+                type: string
+              agent_ids:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UUID'
+        evidence_summary:
+          type: string
+        next_observation:
+          type: string
+        origin_round_id:
+          $ref: '#/components/schemas/UUID'
+        latest_round_id:
+          $ref: '#/components/schemas/UUID'
+        version:
+          type: integer
+          minimum: 1
+        updated_at:
+          type: string
+          format: date-time
+    AgentRelationship:
+      type: object
+      required:
+      - id
+      - from_agent_id
+      - to_agent_id
+      - trust
+      - rapport
+      - summary
+      - version
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        from_agent_id:
+          $ref: '#/components/schemas/UUID'
+        to_agent_id:
+          $ref: '#/components/schemas/UUID'
+        trust:
+          type: string
+          enum:
+          - cautious
+          - neutral
+          - trusting
+        rapport:
+          type: string
+          enum:
+          - tense
+          - neutral
+          - warm
+        summary:
+          type: string
+        latest_round_id:
+          $ref: '#/components/schemas/UUID'
+        version:
+          type: integer
+          minimum: 1
+    GameplayRevision:
+      type: object
+      required:
+      - id
+      - source_round_id
+      - version
+      - kind
+      - after
+      - reason
+      - created_at
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        source_round_id:
+          $ref: '#/components/schemas/UUID'
+        version:
+          type: integer
+        kind:
+          type: string
+        before:
+          type:
+          - object
+          - 'null'
+        after:
+          type: object
+        reason:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    TraditionInfluence:
+      type: object
+      required:
+      - id
+      - tradition_id
+      - agent_id
+      - round_id
+      - category
+      - explanation
+      - tradition_version
+      - tradition_state
+      properties:
+        id:
+          $ref: '#/components/schemas/UUID'
+        tradition_id:
+          $ref: '#/components/schemas/UUID'
+        agent_id:
+          $ref: '#/components/schemas/UUID'
+        round_id:
+          $ref: '#/components/schemas/UUID'
+        category:
+          type: string
+          enum:
+          - interpretation
+          - precaution
+          - challenge
+          - suggestion
+        explanation:
+          type: string
+        tradition_version:
+          type: integer
+        tradition_state:
+          type: string
+          enum:
+          - adopted
+          - contested
+          - retired
+    MysteryPage:
+      type: object
+      required:
+      - mysteries
+      properties:
+        mysteries:
+          type: array
+          items:
+            $ref: '#/components/schemas/Mystery'
+        next_cursor:
+          type: string
+    MysteryDetail:
+      type: object
+      required:
+      - mystery
+      - revisions
+      properties:
+        mystery:
+          $ref: '#/components/schemas/Mystery'
+        revisions:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameplayRevision'
+        next_version:
+          type: integer
+    RelationshipPage:
+      type: object
+      required:
+      - relationships
+      properties:
+        relationships:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentRelationship'
+    GameplayRevisionPage:
+      type: object
+      required:
+      - revisions
+      properties:
+        revisions:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameplayRevision'
+        next_version:
+          type: integer
+    TraditionDetail:
+      type: object
+      required:
+      - tradition
+      - supporter_ids
+      - influences
+      - revisions
+      properties:
+        tradition:
+          $ref: '#/components/schemas/Tradition'
+        supporter_ids:
+          type: array
+          items:
+            $ref: '#/components/schemas/UUID'
+        influences:
+          type: array
+          items:
+            $ref: '#/components/schemas/TraditionInfluence'
+        next_cursor:
+          type: string
+        revisions:
+          type: array
+          maxItems: 25
+          items:
+            type: object
+            description: Saved tradition revisions including source_round_id, version,
+              reason and new_state; 25 per page.
+        next_version: {type: integer}
+
   responses:
     AcceptedCommand:
       description: Command accepted for asynchronous processing.

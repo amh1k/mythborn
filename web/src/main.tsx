@@ -6,6 +6,9 @@ import { ThemeProvider } from './theme'
 import App from './app'
 import './styles/theme.css'
 import './styles/app.css'
+import './styles/motion.css'
+import './styles/interaction-motion.css'
+import './styles/civilization.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode><ThemeProvider><BrowserRouter><AuthProvider><App /></AuthProvider></BrowserRouter></ThemeProvider></React.StrictMode>,

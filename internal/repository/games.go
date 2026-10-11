@@ -237,6 +237,9 @@ func (s *Store) CreateGame(ctx context.Context, owner domain.ID, name string, ro
 			}
 		}
 	}
+	if err = initializeRelationships(ctx, tx, gameID); err != nil {
+		return domain.Game{}, "", err
+	}
 	payload, _ := json.Marshal(map[string]string{"game_id": string(gameID)})
 	if _, err = tx.Exec(ctx, `INSERT INTO workflow_outbox(id,account_id,game_id,command_type,idempotency_key,payload) VALUES($1,$2,$3,'game.start',$4,$5::jsonb)`, string(commandID), string(owner), string(gameID), idem, string(payload)); err != nil {
 		return domain.Game{}, "", err

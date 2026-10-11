@@ -3,7 +3,7 @@ import { api } from '../lib/api'
 import { usePolling } from '../lib/use-polling'
 import type { DebateDetail, DebatePreview, DebateProgress, Episode } from '../types'
 import { debateStage, rateLimitMessage } from '../lib/episode-progress'
-import { Sigil } from './sigil'
+import { AgentMark } from './agent-mark'
 
 const agentNames = { priest: 'The Priest', scientist: 'The Scientist', soldier: 'The Soldier', historian: 'The Historian' }
 
@@ -72,7 +72,7 @@ export function LiveDebate({ episode, token, onProgress }: { episode: Episode; t
       const retry = current.retries?.find(item => item.agent_id === agent.agent_id && item.phase === phase)
       const working = !terminal && !unavailable && !retry && episode.stage !== 'queued' && (phase === 'writing' ? agent.agent_type === 'historian' : ['reaction', 'rebuttal'].includes(phase) && !received)
       const status = paused ? phase === 'writing' ? agent.agent_type === 'historian' ? 'Chronicle paused' : 'Debate complete' : received ? 'Response received' : 'Round paused' : unavailable ? received && phase !== 'writing' ? 'Response received' : 'Waiting to reconnect' : retry ? retryMessage(retry.retry_at) : episode.stage === 'queued' ? 'Waiting to start' : phase === 'describing' ? 'Waiting for the photo description' : phase === 'writing' ? agent.agent_type === 'historian' ? 'Writing the chronicle…' : 'Debate complete' : received ? phase === 'rebuttal' ? 'Rebuttal received' : 'Reaction received' : phase === 'reaction' ? 'Preparing first reaction…' : 'Preparing rebuttal…'
-      return <li key={agent.agent_id}><span className={`agent-avatar ${agent.agent_type}`}><Sigil kind={agent.agent_type} /></span><div><strong>{agent.display_name || agentNames[agent.agent_type]}</strong><small className="agent-progress-status">{working && <span className="activity-indicator" aria-hidden="true" />}{status}</small></div></li>
+      return <li key={agent.agent_id} data-agent-state={retry ? 'waiting' : working ? 'working' : received ? 'received' : 'idle'}><AgentMark type={agent.agent_type} /><div><strong>{agent.display_name || agentNames[agent.agent_type]}</strong><small className="agent-progress-status">{working && <span className="activity-indicator" aria-hidden="true" />}{status}</small></div></li>
     })}</ul>}
     {(['reaction', 'rebuttal'] as const).map(item => {
       const contributions = item === 'reaction' ? reactions : rebuttals
@@ -80,7 +80,7 @@ export function LiveDebate({ episode, token, onProgress }: { episode: Episode; t
       return <div className="debate-phase" key={item}><div className="debate-phase-heading"><h3>{item === 'reaction' ? 'First reactions' : 'The rebuttal round'}</h3><span className="text-small text-muted">{contributions.length} / {current?.agents.length ?? 4}</span></div>
         <ol className="debate-contributions">{contributions.map(entry => {
           const agent = current?.agents.find(value => value.agent_id === entry.agent_id)
-          return <li key={entry.id}><article className="debate-contribution"><div className="debate-speaker">{agent && <span className={`agent-avatar ${agent.agent_type}`}><Sigil kind={agent.agent_type} /></span>}<div><strong>{agent?.display_name || (agent ? agentNames[agent.agent_type] : 'Agent')}</strong><span className="eyebrow">{item === 'reaction' ? 'First interpretation' : 'Response to the other agents'}</span></div></div><p>{entry.text}</p>{entry.reasoning && <details><summary>Their reasoning</summary><p>{entry.reasoning}</p></details>}</article></li>
+          return <li key={entry.id}><article className="debate-contribution"><div className="debate-speaker">{agent && <AgentMark type={agent.agent_type} />}<div><strong>{agent?.display_name || (agent ? agentNames[agent.agent_type] : 'Agent')}</strong><span className="eyebrow">{item === 'reaction' ? 'First interpretation' : 'Response to the other agents'}</span></div></div><p>{entry.text}</p>{entry.reasoning && <details><summary>Their reasoning</summary><p>{entry.reasoning}</p></details>}</article></li>
         })}</ol>{!contributions.length && <p className="text-muted">The agents have heard the first reactions. Their responses will appear here as they arrive.</p>}
       </div>
     })}

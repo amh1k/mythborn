@@ -1,0 +1,19 @@
+# Use the existing database, storage, and Temporal endpoints from .env.
+name: mythborn-backend
+services:
+  api:
+    build: .
+    command: ["/mythborn-api"]
+    env_file: .env
+    environment:
+      HTTP_ADDRESS: :8080
+    ports:
+      - "127.0.0.1:8080:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+  worker:
+    build: .
+    command: ["/mythborn-worker"]
+    env_file: .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

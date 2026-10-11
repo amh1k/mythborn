@@ -1,5 +1,38 @@
 # Local Temporal and Mythborn
 
+## Start only the backend
+
+With Docker available and the root `.env` configured, run from the repository
+root:
+
+```bash
+make api
+```
+
+This builds the backend image and starts only the HTTP API at
+`http://localhost:8080`. It uses your existing Tiger Cloud and Supabase settings.
+It does not start Temporal or the frontend. Saved data and CRUD endpoints work
+without Temporal; executing agent rounds and reading live debate previews need
+an available Temporal server and worker.
+
+To start both the API and the worker against an already running Temporal server:
+
+```bash
+make backend
+```
+
+The backend-only Compose file preserves the Temporal settings from `.env`.
+When Temporal runs on your host machine, use
+`TEMPORAL_ADDRESS=host.docker.internal:7233` and ensure the server listens on an
+address accessible to containers. `localhost` inside a container refers to that
+container. For a hosted server, use its reachable endpoint instead.
+
+Logs stay in the terminal. Press Ctrl+C to stop, or run `make backend-stop` from
+another terminal. Without Make, the API-only command is
+`docker compose -f docker-compose.backend.yml up --build api`.
+
+## Start the complete local stack
+
 Temporal runs locally without a cloud account or API key. The CLI is installed
 at `bin/temporal`. Mythborn's compiled worker and API are `bin/mythborn-worker`
 and `bin/mythborn-api`.
@@ -104,3 +137,19 @@ bin/temporal --version
 Keep the CLI binary in `bin/`; that folder is ignored by Git. Use the same
 architecture as the machine running Mythborn. The first run starts Temporal's
 local development service with persistent state under `bin/local-dev/`.
+
+## Enable gameplay continuity after updating the code
+
+Apply the new migrations to your application database using the existing quoted `DATABASE_URL`, then rebuild the API and worker:
+
+```bash
+set -a
+. ./.env
+set +a
+goose -dir migrations postgres "$DATABASE_URL" up
+docker compose up -d --build api worker
+```
+
+The existing local Temporal service must be healthy. Restarting the frontend dev server is only necessary if it was stopped. The overview now shows mysteries, agent details show relationships, and culture records show their later influence. Old histories remain readable; new gameplay records grow from subsequent discoveries.
+
+The three `GAMEPLAY_*_ENABLED` controls in `.env.example` default to true. To run database integration tests, use a disposable migrated database with `MYTHBORN_TEST_DATABASE_URL`; never point those tests at your application database. An optional provider check is available with `MYTHBORN_LIVE_GAMEPLAY_TEST=true go test ./internal/activities -run '^TestLiveGameplayRound$' -timeout 7m -v`; it uses fictional evidence and generation calls, and does not write game records.

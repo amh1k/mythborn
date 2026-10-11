@@ -175,3 +175,13 @@ The creator subsequently chose an explicit games table, one immutable player rol
 Other existing choices are one scheduled council per day only when there is a real unresolved issue; explicit states for traditions as support changes; a proclamation attached to a God observation; Messenger testimony and direct follow-up within a discovery; and retry-or-continue handling for unclear images.
 
 The technology decisions are recorded in [TECHNOLOGIES.md](./TECHNOLOGIES.md). Remaining implementation details include exact interface copy, visual design, resource sizing, and prompt tuning; they do not change the intended user experience.
+
+## Gameplay continuity extension
+
+Discovery episodes now support three persistent forms of continuity:
+
+- **Mysteries:** the historian may record one new observable open question per discovery, up to three open questions per civilization. Competing explanations and evidence remain linked to source rounds. Later discoveries can advance, resolve, or reopen a question; resolution represents the civilization's interpretation rather than scientific proof. Unrelated photos remain valid and need not advance a mystery. Councils and Messenger exchanges may discuss mysteries but do not directly revise them.
+- **Agent relationships:** each agent has a directed view of the other three, expressed as qualitative trust (`cautious`, `neutral`, `trusting`) and rapport (`tense`, `neutral`, `warm`). Discovery/council rebuttals may propose changes to the speaker's own outgoing relationships. Agreement does not automatically create trust, and disagreement does not automatically create hostility. New and existing games begin neutral; updates retain a short reason and source round.
+- **Culture influence:** relevant existing traditions can shape later interpretations, precautions, challenges, and suggestions. A saved influence is distinct from a support vote or tradition revision. At most four concise influence summaries are retained per round; traditions do not imply invented physical events or enacted rituals.
+
+All roles can inspect these records. Observer gains no communication or voting controls. Current state and meaningful revisions commit with the chronicle; raw debate remains temporary. Archives retain readable continuity history. The overview shows mysteries, agent details show outgoing relationships, and culture/episode views explain tradition influences. See [GAMEPLAY_EVOLUTION_PLAN.md](./GAMEPLAY_EVOLUTION_PLAN.md) for implementation and evaluation details.

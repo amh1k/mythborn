@@ -1,0 +1,204 @@
+/* Quick feedback, slower artwork, and a gentle arrival of new records. */
+:root {
+  --motion-quick: 160ms;
+  --motion-response: 280ms;
+  --motion-scene: 700ms;
+  --ease-settle: cubic-bezier(.22, 1, .36, 1);
+}
+.button, .text-button, .tab, .primary-nav a, .back-link, summary {
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--motion-quick) ease, background-color var(--motion-response) ease,
+    border-color var(--motion-response) ease, box-shadow var(--motion-response) ease,
+    transform var(--motion-response) var(--ease-settle), opacity var(--motion-quick) ease;
+}
+.button > span[aria-hidden], .card-link > span, .brand-mark, .role-icon,
+.agent-avatar, .upload-symbol, .world-cover-label, .world-symbol {
+  transition: transform var(--motion-scene) var(--ease-settle), color var(--motion-response) ease;
+}
+.button:active:not(:disabled):not([aria-disabled="true"]) { transform: translateY(1px) scale(.98); }
+.button:disabled, .button[aria-disabled="true"] { transform: none; }
+.button:focus-visible, .world-card:focus-visible, .agent-card:focus-visible { outline-offset: 5px; }
+.primary-nav a, .tab { position: relative; }
+.primary-nav a.active, .primary-nav a:hover { box-shadow: none; }
+.primary-nav a::after, .tab::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
+  background: var(--accent-primary); transform: scaleX(0); transform-origin: left;
+  transition: transform var(--motion-response) var(--ease-settle);
+}
+.primary-nav a.active::after, .primary-nav a:focus-visible::after,
+.tab.active::after, .tab:focus-visible::after { transform: scaleX(1); }
+.tab, .tab.active { border-bottom-color: transparent; }
+.tab::after { height: 3px; }
+.tab:active { transform: translateY(1px); }
+.theme-toggle svg { animation: icon-arrive 380ms var(--ease-settle); }
+.theme-toggle:active svg { transform: rotate(15deg); }
+
+/* A theme change is one coordinated scene transition, rather than staggered cards. */
+html[data-theme-transition="crossfade"]::view-transition-group(root) {
+  animation-duration: 600ms;
+  animation-timing-function: ease-in-out;
+}
+html[data-theme-transition="crossfade"]::view-transition-old(root),
+html[data-theme-transition="crossfade"]::view-transition-new(root) {
+  animation-duration: 600ms;
+  animation-timing-function: ease-in-out;
+}
+html[data-theme-transition="crossfade"] *,
+html[data-theme-transition="crossfade"] *::before,
+html[data-theme-transition="crossfade"] *::after {
+  transition-duration: 0s !important;
+}
+html[data-theme-transition="colors"],
+html[data-theme-transition="colors"] *,
+html[data-theme-transition="colors"] *::before,
+html[data-theme-transition="colors"] *::after {
+  transition-property: background-color, color, border-color, box-shadow, fill, stroke !important;
+  transition-duration: 600ms !important;
+  transition-timing-function: ease-in-out !important;
+}
+.site-header, .site-footer, .auth-card, .detail-panel, .aside-card, .role-card {
+  transition: background-color var(--motion-response) ease, color var(--motion-response) ease;
+}
+.mobile-menu[aria-expanded="true"] { background: var(--color-moss-soft); border-color: var(--accent-primary); }
+
+/* Scene changes never replay the introductory heading. */
+.atlas-hero { animation: scene-arrive 1000ms var(--ease-settle) both; }
+.atlas-hero-copy > * { animation: text-arrive 850ms var(--ease-settle) both; }
+.atlas-hero-copy > :nth-child(1) { animation-delay: 100ms; }
+.atlas-hero-copy > :nth-child(2) { animation-delay: 190ms; }
+.atlas-hero-copy > :nth-child(3) { animation-delay: 300ms; }
+.atlas-hero-copy > :nth-child(4) { animation-delay: 400ms; }
+.atlas-hero-copy:focus-within > * { animation: none; }
+.atlas-scenes {
+  inset: -10px;
+  transform: translate3d(var(--pointer-x, 0px), var(--pointer-y, 0px), 0);
+  transition: transform 1000ms var(--ease-settle);
+}
+.scene-caption { animation: text-arrive 650ms var(--ease-settle) both; }
+.scene-number { font-variant-numeric: tabular-nums; }
+.world-banner > div > * { animation: text-arrive 650ms var(--ease-settle) backwards; }
+.world-banner > div > :nth-child(2) { animation-delay: 90ms; }
+.world-banner > div > :nth-child(3) { animation-delay: 160ms; }
+
+/* Illustration moves inside its frame; card text stays readable. */
+.world-card { transition: transform var(--motion-scene) var(--ease-settle), border-color var(--motion-response) ease; }
+.world-cover-art { transform: scale(1.015); transition: transform 1000ms var(--ease-settle), filter var(--motion-scene) ease; }
+.world-card h3 { transition: color var(--motion-response) ease; }
+.world-card:focus-visible .world-cover-art { transform: scale(1.065); }
+.world-card:focus-visible h3 { color: var(--accent-secondary); }
+.world-card:focus-visible .card-link > span { transform: translateX(5px); }
+.world-card:active { transform: translateY(-1px) scale(.995); }
+.agent-card, .role-option, .upload-zone {
+  transition: background-color var(--motion-response) ease, border-color var(--motion-response) ease,
+    box-shadow var(--motion-response) ease, transform var(--motion-response) var(--ease-settle);
+}
+.agent-card:active, .role-option:active { transform: scale(.99); }
+.agent-card.chosen .agent-avatar, .role-option.selected .role-icon { transform: translateY(-2px); }
+.role-option:focus-within { border-color: var(--color-focus); }
+.upload-zone[data-selected="true"] { border-style: solid; border-color: var(--color-moss); background: var(--color-moss-soft); }
+.upload-zone[data-selected="true"] .upload-symbol { transform: scale(1.1); }
+
+/* Forms respond without shifting labels or changing target sizes. */
+input:not([type="checkbox"]):not([type="radio"]), textarea, select {
+  transition: background-color var(--motion-response) ease, border-color var(--motion-response) ease, box-shadow var(--motion-response) ease;
+}
+input:not([type="checkbox"]):not([type="radio"]):focus, textarea:focus, select:focus {
+  border-color: var(--color-focus); box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-focus) 10%, transparent);
+}
+input::placeholder, textarea::placeholder { transition: opacity var(--motion-quick) ease; }
+input:focus::placeholder, textarea:focus::placeholder { opacity: .55; }
+input[type="checkbox"], input[type="radio"] { transition: transform var(--motion-quick) var(--ease-settle); }
+input[type="checkbox"]:active, input[type="radio"]:active { transform: scale(.9); }
+
+/* Reading surfaces use ink changes, reserving lift for actionable cards. */
+.chronicle-card, .tradition-card, .belief-list > li, .template-card, .round-card,
+.debate-contribution, .settings-row, .admin-table tbody tr, .continuity-card, .continuity-entry {
+  transition: background-color var(--motion-response) ease, border-color var(--motion-response) ease;
+}
+summary { cursor: pointer; text-underline-offset: .2em; }
+details > summary::marker { color: var(--accent-secondary); }
+details[open] > summary { color: var(--text-primary); }
+.loading { display: flex; align-items: center; gap: 1rem; padding-block: var(--space-5); animation: loading-arrive 240ms ease-out both; }
+.loading-copy { min-width: 0; }
+.loading-title { margin: 0; color: var(--text-primary); font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; line-height: 1.35; }
+.loading-detail { max-width: 32ch; margin: .5rem 0 0; color: var(--text-secondary); font-size: var(--text-sm); line-height: 1.6; }
+.loading-page, .loading-section { flex-direction: column; justify-content: center; gap: 1.5rem; padding: var(--space-8) var(--space-4); text-align: center; }
+.loading-page { min-height: clamp(20rem, 48svh, 30rem); }
+.loading-section { min-height: 14rem; }
+.loading-page .loading-title, .loading-section .loading-title { font-size: clamp(1.5rem, 4vw, 1.85rem); text-wrap: balance; }
+.loading-page .loading-detail, .loading-section .loading-detail { margin-inline: auto; }
+.app-loading { padding-top: var(--space-8); }
+.app-loading .loading-page { min-height: 65svh; }
+.atlas-spinner { display: block; width: 2.5rem; height: 2.5rem; flex: 0 0 auto; overflow: visible; }
+.loading-page .atlas-spinner, .loading-section .atlas-spinner { width: 4rem; height: 4rem; }
+.spinner-track { stroke: var(--border-subtle); stroke-width: 1; }
+.spinner-points { stroke: var(--text-secondary); stroke-width: 1; }
+.spinner-orbit { transform-origin: 32px 32px; stroke: var(--accent-secondary); stroke-width: 2; stroke-linecap: round; animation: atlas-orbit 2400ms linear infinite; }
+.spinner-orbit circle, .spinner-core { fill: var(--accent-secondary); stroke: none; }
+.spinner-orbit-inner { stroke: var(--text-secondary); stroke-width: 1; animation-direction: reverse; animation-duration: 3600ms; }
+.spinner-center { stroke: var(--accent-secondary); stroke-width: 1; fill: var(--color-copper-soft); }
+.progress-steps li { transition: color var(--motion-response) ease; }
+.step-mark {
+  transition: background-color 450ms ease, border-color 450ms ease, color var(--motion-response) ease,
+    transform 450ms var(--ease-settle), box-shadow 450ms ease;
+}
+.progress-steps li.current .step-mark { transform: translateY(-2px); box-shadow: 0 3px 0 var(--color-moss-soft); }
+.progress-steps li.complete .step-mark { transform: none; box-shadow: none; }
+.debate-agents li { transition: opacity var(--motion-response) ease; }
+.debate-agents li[data-agent-state="received"] .agent-avatar { transform: translateY(-2px); }
+.agent-progress-status { transition: color var(--motion-response) ease; }
+.debate-agents li[data-agent-state="received"] .agent-progress-status { color: var(--color-moss-dark); }
+
+@media (hover: hover) and (pointer: fine) {
+  .button:hover:not(:disabled):not([aria-disabled="true"]) { transform: translateY(-2px); }
+  .button:hover:not(:disabled):not([aria-disabled="true"]) > span[aria-hidden], .world-card:hover .card-link > span { transform: translateX(5px); }
+  .button:active:not(:disabled):not([aria-disabled="true"]) { transform: translateY(1px) scale(.98); }
+  .brand:hover .brand-mark { transform: translateY(-1px); }
+  .primary-nav a:hover::after, .tab:hover::after { transform: scaleX(1); }
+  .world-card:hover { transform: translateY(-4px); }
+  .world-card:hover .world-cover-art {
+    transform: scale(1.065) translate3d(var(--pointer-x, 0px), var(--pointer-y, 0px), 0); filter: saturate(1.08);
+  }
+  .world-card:hover h3 { color: var(--accent-secondary); }
+  .world-card:hover .world-symbol { transform: translateY(-3px) rotate(-4deg); }
+  .world-card:hover .world-cover-label { transform: translateY(-3px); }
+  .world-card:active { transform: translateY(-1px) scale(.995); }
+  .agent-card:hover { transform: translateY(-3px); border-color: var(--accent-secondary); }
+  .agent-card:hover .agent-avatar { transform: translateY(-3px) rotate(-4deg); }
+  .role-option:hover { transform: translateX(3px); border-color: var(--accent-secondary); }
+  .role-option:hover .role-icon { transform: translateY(-2px); }
+  .upload-zone:hover .upload-symbol { transform: translateY(-4px) rotate(90deg); }
+  .upload-zone[data-selected="true"]:hover .upload-symbol { transform: translateY(-3px) scale(1.1); }
+  .text-button:hover, summary:hover { text-decoration: underline; }
+  .back-link:hover { transform: translateX(-3px); }
+  .chronicle-card:hover, .tradition-card:hover, .belief-list > li:hover, .template-card:hover,
+  .round-card:hover, .admin-table tbody tr:hover, .continuity-card:hover {
+    background-color: var(--surface-subtle); border-color: var(--accent-secondary);
+  }
+  .debate-contribution:hover { border-color: var(--accent-secondary); }
+}
+@media (max-width: 42rem) {
+  .primary-nav.is-open { animation: menu-arrive 280ms var(--ease-settle) both; transform-origin: top; }
+  .primary-nav.is-open > * { animation: text-arrive 300ms var(--ease-settle) backwards; }
+  .primary-nav.is-open > :nth-child(2) { animation-delay: 40ms; }
+  .primary-nav.is-open > :nth-child(3) { animation-delay: 70ms; }
+  .primary-nav.is-open > :nth-child(4) { animation-delay: 100ms; }
+}
+@keyframes text-arrive { from { opacity: 0; translate: 0 14px; } to { opacity: 1; translate: 0 0; } }
+@keyframes scene-arrive { from { opacity: 0; } to { opacity: 1; } }
+@keyframes menu-arrive { from { opacity: 0; transform: translateY(-6px) scaleY(.97); } to { opacity: 1; transform: none; } }
+@keyframes icon-arrive { from { opacity: 0; transform: rotate(-35deg) scale(.75); } to { opacity: 1; transform: none; } }
+@keyframes atlas-orbit { to { transform: rotate(360deg); } }
+@keyframes loading-arrive { from { opacity: 0; } to { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  html::view-transition-group(root), html::view-transition-old(root), html::view-transition-new(root) {
+    animation: none !important;
+  }
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  .atlas-scenes, .world-cover-art, .world-card, .button, .brand-mark, .role-option,
+  .agent-card, .agent-avatar, .role-icon, .world-symbol, .world-cover-label,
+  .card-link > span, .button > span[aria-hidden], .upload-symbol, .back-link,
+  .step-mark, .theme-toggle svg, .loading-mark { transform: none !important; }
+  .world-cover-art { filter: none !important; }
+}

@@ -1,0 +1,141 @@
+/* Civilization pages are a working journal: evidence, named voices, and recorded consequences. */
+.journal-label { display: block; margin: 0 0 .5rem; color: var(--text-secondary); font-family: var(--font-body); font-size: .7rem; font-weight: 600; letter-spacing: .08em; line-height: 1.5; text-transform: uppercase; }
+.civilization { max-width: 74rem; margin-inline: auto; }
+.civilization > .back-link { margin-bottom: var(--space-8); }
+.civilization-banner { display: block; width: 100%; height: clamp(10rem, 24vw, 18rem); margin-bottom: 2rem; object-fit: cover; object-position: center 45%; }
+.civilization-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 2rem; margin-bottom: 2rem; }
+.civilization-header > div { min-width: 0; }
+.civilization-header h1 { margin: .3rem 0 1rem; font-family: var(--font-display); font-size: clamp(2.5rem, 5.5vw, 4.5rem); font-weight: 700; letter-spacing: -.035em; line-height: 1.08; overflow-wrap: anywhere; }
+.civilization-header > .status-pill { flex-shrink: 0; margin-top: .35rem; background: transparent; }
+.civilization-meta { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; color: var(--text-secondary); font-size: var(--text-sm); }
+.civilization .world-tabs { gap: clamp(.6rem, 2vw, 1.8rem); margin: 0 0 3rem; border: 0; padding-bottom: .25rem; }
+.civilization .world-tabs .tab { min-height: 2.75rem; padding: .6rem 0; font-size: var(--text-sm); font-weight: 600; }
+.civilization .world-tabs .tab.active { color: var(--text-primary); }
+.civilization .world-tabs .tab::after { height: 1px; background: var(--text-primary); }
+.civilization .section-heading h2 { font-family: var(--font-display); font-size: 1.85rem; }
+.civilization .overview-grid { grid-template-columns: minmax(0, 1fr) minmax(15rem, .42fr); gap: clamp(2rem, 5vw, 5rem); }
+.civilization .overview-main, .civilization .overview-aside { gap: 2.5rem; }
+.civilization .discovery-card { padding: 0; border: 0; background: transparent; }
+.discovery-heading { max-width: 32rem; margin-bottom: 1.5rem; }
+.discovery-heading h2 { margin: 0 0 .75rem; font-family: var(--font-display); font-size: clamp(2rem, 4vw, 3rem); font-weight: 400; letter-spacing: -.025em; }
+.discovery-heading p { margin: 0; line-height: 1.65; }
+.civilization .observation-form { margin-top: 1.5rem; gap: 1.25rem; }
+.civilization .upload-zone { position: relative; display: flex; min-height: 0; flex-direction: column; align-items: stretch; gap: 0; padding: 0; margin: 0; border: 1px solid var(--border-subtle); background: transparent; text-align: left; }
+.civilization .upload-zone input[type="file"] { position: absolute; top: 0; left: 0; width: 1px; height: 1px; min-height: 0; padding: 0; margin: 0; border: 0; clip-path: inset(50%); }
+.upload-plate { display: grid; min-height: 15rem; place-items: center; overflow: hidden; background: var(--surface-subtle); }
+.upload-invitation { padding: 2rem 1rem; color: var(--text-secondary); font-family: var(--font-display); font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 400; line-height: 1.25; text-align: center; }
+.upload-invitation em { color: var(--text-primary); }
+.upload-invitation > span { display: block; margin-top: .75rem; font-family: var(--font-body); font-size: .75rem; font-style: normal; line-height: 1.6; }
+.upload-caption { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: .5rem 1rem; padding: 1rem 1.25rem .35rem; }
+.upload-caption strong { color: var(--text-primary); font-size: var(--text-sm); text-decoration: underline; text-underline-offset: .25em; }
+.upload-caption small { max-width: 100%; overflow-wrap: anywhere; }
+.upload-formats { padding: 0 1.25rem 1rem; color: var(--text-secondary); font-size: var(--text-xs); font-weight: 400; }
+.observation-preview { display: block; width: 100%; height: 18rem; object-fit: contain; }
+.civilization .upload-zone[data-selected="true"] { border-color: var(--border-subtle); background: transparent; }
+.civilization .upload-zone:hover, .civilization .upload-zone:focus-within { border-color: var(--text-secondary); background: transparent; }
+.civilization .observation-form > .button { justify-self: start; min-width: 10rem; }
+.civilization .observation-form > .text-small { max-width: 58ch; font-size: .75rem; line-height: 1.65; }
+.civilization .suggestion { margin-block: 1.5rem; padding: 1rem 0; border: 0; background: transparent; }
+.civilization .suggestion .eyebrow { color: var(--text-secondary); font-size: .65rem; }
+.civilization .suggestion p { font-size: 1.35rem; line-height: 1.5; }
+
+/* Speakers sign their records with initials rather than stock profession pictograms. */
+.agent-avatar.agent-letter { width: 2.75rem; padding: 0; background: transparent; color: var(--text-primary); font-family: var(--font-display); font-size: 2.5rem; font-weight: 400; font-style: italic; letter-spacing: -.1em; line-height: 1; }
+.agent-avatar.agent-letter.large { width: 3.5rem; font-size: 3.5rem; }
+.council-roster { padding: .25rem 0 0; }
+.council-roster .section-heading { align-items: baseline; gap: 1rem; margin-bottom: 1.5rem; }
+.council-roster h3 { margin: 0; font-family: var(--font-display); font-size: 1.85rem; font-weight: 400; }
+.council-roster .section-heading > span { font-size: .7rem; }
+.civilization .agent-mini { align-items: flex-start; gap: 1rem; padding: 0 0 1.5rem; border: 0; }
+.civilization .agent-mini > span:last-child { min-width: 0; }
+.civilization .agent-mini strong { font-family: var(--font-display); font-size: 1.35rem; font-weight: 700; overflow-wrap: anywhere; }
+.civilization .agent-mini small { margin-top: .3rem; line-height: 1.6; }
+.council-role { text-transform: capitalize; }
+.council-link { margin-top: .25rem; font-size: var(--text-sm); }
+.civilization .role-card { padding: 0; border: 0; background: transparent; }
+.civilization .role-card h3 { font-family: var(--font-display); font-size: 1.5rem; }
+.civilization .role-card p:last-child { max-width: 30ch; line-height: 1.7; }
+.civilization .content-columns { grid-template-columns: minmax(16rem, .8fr) minmax(0, 1.2fr); gap: clamp(2rem, 5vw, 5rem); }
+.civilization .agent-grid { grid-template-columns: 1fr; gap: 0; }
+.civilization .agent-card { display: grid; grid-template-columns: 3.5rem minmax(0, 1fr); align-items: start; min-height: 0; gap: .35rem 1.25rem; width: 100%; padding: 1.4rem 0; border: 0; border-bottom: 1px solid var(--border-subtle); background: transparent; }
+.agent-card-copy { display: grid; min-width: 0; gap: .3rem; }
+.civilization .agent-card-copy .journal-label { margin: 0; font-size: .6rem; }
+.civilization .agent-card strong { font-family: var(--font-display); font-size: 1.65rem; overflow-wrap: anywhere; }
+.civilization .agent-card-copy .text-small { font-size: .8rem; line-height: 1.65; }
+.agent-selection { grid-column: 2; color: var(--text-secondary); font-size: .7rem; margin-top: .4rem; }
+.civilization .agent-card.chosen { background: transparent; border-color: var(--text-primary); }
+.civilization .agent-card.chosen .agent-selection { color: var(--text-primary); font-weight: 600; }
+.civilization .agent-card.chosen strong { color: var(--accent-secondary); }
+.civilization .detail-panel { min-height: 20rem; padding: 1.5rem 0 0; border: 0; background: transparent; }
+.civilization .detail-panel > .eyebrow { color: var(--text-secondary); }
+.civilization .detail-panel > h2 { margin-bottom: 2rem; font-family: var(--font-display); font-size: 2.4rem; font-weight: 400; overflow-wrap: anywhere; }
+.civilization .belief-list { gap: 0; }
+.civilization .belief-list > li { padding: 1rem 0 1.5rem; border: 0; border-bottom: 1px solid var(--border-subtle); border-radius: 0; }
+.civilization .belief-list > li > p { max-width: 60ch; font-size: 1.05rem; line-height: 1.7; }
+.civilization .belief-list details { margin-top: .75rem; }
+.civilization .belief-list .status-pill { background: transparent; }
+.civilization .messenger-box { margin-top: 2.5rem; padding-top: 0; border: 0; }
+
+/* Reading tabs share the same open page, with metadata in a quiet margin. */
+.civilization .chronicle-list { gap: 1.5rem; }
+.civilization .chronicle-card { display: grid; grid-template-columns: 8rem minmax(0, 1fr); column-gap: 1.5rem; padding: 1.5rem 0; border: 0; border-bottom: 1px solid var(--border-subtle); background: transparent; }
+.civilization .chronicle-meta { grid-column: 1; grid-row: 1 / span 4; display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start; gap: .75rem; margin: .3rem 0 0; }
+.civilization .chronicle-meta .eyebrow { font-size: .65rem; line-height: 1.7; }
+.civilization .chronicle-card > h3, .civilization .chronicle-card > p, .civilization .chronicle-card > a, .civilization .chronicle-card > .suggestion { grid-column: 2; }
+.civilization .chronicle-card h3 { font-family: var(--font-display); font-size: 1.65rem; line-height: 1.35; overflow-wrap: anywhere; }
+.civilization .chronicle-card > p { max-width: 70ch; margin-block: .5rem 1rem; line-height: 1.7; }
+.civilization .chronicle-card > a { justify-self: start; font-size: var(--text-sm); }
+.civilization .culture-columns { gap: 2rem; }
+.civilization .culture-group > .section-heading h3 { text-transform: capitalize; font-family: var(--font-display); font-size: 1.6rem; }
+.civilization .tradition-card { padding: 1.25rem 0; border: 0; border-bottom: 1px solid var(--border-subtle); background: transparent; }
+.civilization .tradition-card h3 { font-family: var(--font-display); font-size: 1.6rem; line-height: 1.35; overflow-wrap: anywhere; }
+.civilization .tradition-card p { line-height: 1.7; }
+.civilization .continuity-panel { margin-top: 2rem; padding: 0; border: 0; background: transparent; }
+.civilization .continuity-card, .civilization .continuity-entry { padding: 1.5rem 0; border: 0; border-bottom: 1px solid var(--border-subtle); background: transparent; }
+.civilization .continuity-card h3, .civilization .continuity-entry h4 { font-family: var(--font-display); font-size: 1.5rem; }
+.civilization .continuity-card p, .civilization .continuity-entry p { max-width: 65ch; line-height: 1.7; }
+.civilization .world-rounds { margin-top: 0; margin-bottom: 2.5rem; }
+.civilization .world-rounds .eyebrow { color: var(--text-secondary); }
+.civilization .round-card { padding: 1.25rem 0; border: 0; border-bottom: 1px solid var(--border-subtle); background: transparent; }
+.civilization .round-summary h3 { font-family: var(--font-display); font-size: 1.7rem; }
+.civilization .round-card .button { border-color: transparent; background: transparent; text-decoration: underline; text-underline-offset: .25em; }
+.civilization .settings-page { max-width: 48rem; }
+.civilization .settings-row { padding-block: 1.75rem; border: 0; border-bottom: 1px solid var(--border-subtle); }
+.civilization .settings-row h3 { font-family: var(--font-body); font-size: 1rem; }
+.civilization .settings-row p { margin-top: .5rem; line-height: 1.7; }
+.civilization .empty-state { padding: 1.25rem 0; border: 0; background: transparent; line-height: 1.7; }
+
+@media (hover: hover) and (pointer: fine) {
+  .civilization .agent-card:hover { transform: translateX(3px); border-color: var(--text-secondary); }
+  .civilization .agent-card:hover .agent-avatar { transform: translateY(-2px); }
+  .civilization .chronicle-card:hover, .civilization .tradition-card:hover, .civilization .belief-list > li:hover,
+  .civilization .round-card:hover, .civilization .continuity-card:hover { background: transparent; }
+}
+@media (max-width: 58rem) {
+  .civilization .overview-grid { grid-template-columns: minmax(0, 1fr); gap: 3rem; }
+  .civilization .overview-aside { grid-template-columns: minmax(0, 1fr) minmax(0, .7fr); gap: 2rem; }
+  .civilization .content-columns { grid-template-columns: minmax(0, 1fr); gap: 2rem; }
+  .civilization .agent-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 1.5rem; }
+}
+@media (max-width: 42rem) {
+  .civilization > .back-link { margin-bottom: 1.5rem; }
+  .civilization-header { flex-direction: column; gap: .75rem; margin-bottom: 1.5rem; }
+  .civilization-header h1 { font-size: clamp(2rem, 8vw, 3rem); }
+  .civilization-meta { flex-direction: column; gap: .35rem; font-size: .75rem; }
+  .civilization .world-tabs { gap: 1.25rem; margin-bottom: 2rem; }
+  .civilization .world-tabs .tab { font-size: .8rem; }
+  .civilization .overview-aside { grid-template-columns: minmax(0, 1fr); gap: 2rem; }
+  .upload-plate { min-height: 12rem; }
+  .observation-preview { height: 14rem; }
+  .upload-caption { padding-inline: 1rem; }
+  .upload-formats { padding-inline: 1rem; font-size: .65rem; }
+  .civilization .agent-grid { grid-template-columns: minmax(0, 1fr); }
+  .civilization .agent-card { grid-template-columns: 2.75rem minmax(0, 1fr); gap: .3rem 1rem; padding-block: 1.1rem; }
+  .civilization .agent-card .agent-letter { width: 2.75rem; font-size: 2.75rem; }
+  .civilization .chronicle-card { grid-template-columns: minmax(0, 1fr); }
+  .civilization .chronicle-meta { grid-column: 1; grid-row: auto; flex-direction: row; flex-wrap: wrap; margin-bottom: .8rem; }
+  .civilization .chronicle-card > h3, .civilization .chronicle-card > p, .civilization .chronicle-card > a, .civilization .chronicle-card > .suggestion { grid-column: 1; }
+  .civilization .culture-columns { grid-template-columns: minmax(0, 1fr); }
+  .civilization .culture-group { display: block; }
+}
+@media (prefers-reduced-motion: reduce) { .civilization .agent-card:hover { transform: none; } }

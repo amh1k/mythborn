@@ -73,6 +73,9 @@ func (g *Gemini) GenerateJSON(ctx context.Context, instruction string, image []b
 	if err != nil {
 		return err
 	}
+	if response == nil {
+		return fmt.Errorf("model returned no response")
+	}
 	text := strings.TrimSpace(response.Text())
 	if len(text) == 0 || len(text) > maxModelOutputBytes {
 		return fmt.Errorf("model returned empty or oversized JSON output")
@@ -103,8 +106,16 @@ func (g *Gemini) GenerateJSON(ctx context.Context, instruction string, image []b
 	return nil
 }
 
-func jsonConfig() *genai.GenerateContentConfig {
-	return &genai.GenerateContentConfig{ResponseMIMEType: "application/json", MaxOutputTokens: 4096}
+func jsonConfig() *genai.GenerateContentConfig { return jsonConfigForPhase("") }
+
+func jsonConfigForPhase(phase string) *genai.GenerateContentConfig {
+	limit := int32(4096)
+	// Gemma's completion cap includes thinking. The longer structured phases
+	// need room for a final answer after reasoning; stored text limits remain unchanged.
+	if phase == "rebuttal" || phase == "writing" {
+		limit = 8192
+	}
+	return &genai.GenerateContentConfig{ResponseMIMEType: "application/json", MaxOutputTokens: limit}
 }
 
 func (g *Gemini) Embed(ctx context.Context, text string, query bool) ([]float32, error) {

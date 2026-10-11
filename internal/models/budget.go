@@ -139,11 +139,14 @@ func (g *Gemini) generate(ctx context.Context, parts []*genai.Part) (response *g
 		return nil, err
 	}
 
-	response, err = g.client.Models.GenerateContent(ctx, g.model, []*genai.Content{{Parts: parts}}, jsonConfig())
 	trace, _ := ctx.Value(traceKey{}).(Trace)
+	response, err = g.client.Models.GenerateContent(ctx, g.model, []*genai.Content{{Parts: parts}}, jsonConfigForPhase(trace.Phase))
 	attributes := []any{"game_id", trace.GameID, "round_id", trace.RoundID, "agent_id", trace.AgentID, "phase", trace.Phase, "model", g.model, "prompt_bytes", bytes, "estimated_input_tokens", estimate, "queue_wait_ms", waited.Milliseconds(), "duration_ms", time.Since(started).Milliseconds(), "success", err == nil}
 	if response != nil && response.UsageMetadata != nil {
-		attributes = append(attributes, "input_tokens", response.UsageMetadata.PromptTokenCount, "output_tokens", response.UsageMetadata.CandidatesTokenCount)
+		attributes = append(attributes, "input_tokens", response.UsageMetadata.PromptTokenCount, "output_tokens", response.UsageMetadata.CandidatesTokenCount, "thinking_tokens", response.UsageMetadata.ThoughtsTokenCount)
+	}
+	if response != nil && len(response.Candidates) > 0 {
+		attributes = append(attributes, "finish_reason", response.Candidates[0].FinishReason)
 	}
 	slog.InfoContext(ctx, "model_generation", attributes...)
 	return response, err

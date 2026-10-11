@@ -1,4 +1,4 @@
-import type { AdminAccount, Agent, AgentTemplate, ApiEnvelope, ApiErrorShape, Belief, Chronicle, ConversationSummary, DebateDetail, Episode, EpisodeSummary, Game, HistoryItem, InitialBeliefTemplate, Tradition } from '../types'
+import type { AdminAccount, Agent, AgentTemplate, ApiEnvelope, ApiErrorShape, Belief, Chronicle, ConversationSummary, DebateDetail, Episode, EpisodeSummary, Game, HistoryItem, InitialBeliefTemplate, Tradition, Mystery, Relationship, LoreRevision, TraditionInfluence } from '../types'
 
 const baseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '') ?? ''
 
@@ -25,6 +25,11 @@ async function request<T>(path: string, token: string, init: RequestInit = {}, i
 
 const body = (value: unknown) => JSON.stringify(value)
 export const api = {
+  mysteries: (token: string, id: string, cursor = '') => request<{ mysteries: Mystery[]; next_cursor?: string }>(`/worlds/${id}/mysteries?cursor=${encodeURIComponent(cursor)}`, token),
+  mystery: (token: string, id: string, mystery: string, after = 0) => request<{ mystery: Mystery; revisions: LoreRevision[]; next_version?: number }>(`/worlds/${id}/mysteries/${mystery}?after_version=${after}`, token),
+  relationships: (token: string, id: string, agent: string) => request<{ relationships: Relationship[] }>(`/worlds/${id}/agents/${agent}/relationships`, token),
+  relationshipHistory: (token: string, id: string, agent: string, relationship: string, after = 0) => request<{ revisions: LoreRevision[]; next_version?: number }>(`/worlds/${id}/agents/${agent}/relationships/${relationship}?after_version=${after}`, token),
+  traditionDetail: (token: string, id: string, tradition: string, cursor = '', after = 0) => request<{ tradition: Tradition; supporter_ids: string[]; influences: TraditionInfluence[]; next_cursor?: string; next_version?: number; revisions: { id: string; source_round_id: string; version: number; reason: string; previous_state?: string; new_state: string }[] }>(`/worlds/${id}/traditions/${tradition}?cursor=${encodeURIComponent(cursor)}&after_version=${after}`, token),
   worlds: (token: string) => request<Game[] | { worlds: Game[] }>('/worlds', token),
   world: async (token: string, id: string) => { const result = await request<Game | { world: Game }>(`/worlds/${id}`, token); return 'world' in result ? result.world : result },
   createWorld: async (token: string, payload: { name: string; player_role: Game['player_role']; idempotency_key: string }) => (await request<{ world: Game }>('/worlds', token, { method: 'POST', body: body({ name: payload.name, player_role: payload.player_role }) }, payload.idempotency_key)).world,

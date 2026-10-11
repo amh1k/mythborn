@@ -310,6 +310,9 @@ func (s *Store) CommitRound(ctx context.Context, commit workflow.RoundCommit) er
 	if kind == string(domain.RoundKindClosing) && (len(commit.BeliefProposals) != 0 || len(commit.TraditionChanges) != 0) {
 		return fmt.Errorf("closing round cannot revise beliefs or traditions")
 	}
+	if err = applyGameplay(ctx, tx, gameID, roundID, kind, commit.Gameplay); err != nil {
+		return err
+	}
 	for _, proposal := range commit.BeliefProposals {
 		if err = applyBeliefProposal(ctx, tx, gameID, roundID, commit.EventID, kind, nil, proposal); err != nil {
 			return err

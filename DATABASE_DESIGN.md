@@ -515,3 +515,21 @@ Do not silently truncate belief or tradition history: retaining revisions is an 
 5. Add the derived memory-search index and admin portal operations using the same authorization and consistency rules.
 
 The design deliberately avoids generic permission matrices, separate tables for each player role, chronicle approval queues, full chat histories, permanent debate records, and a separate suggestions table. New requirements can extend the schema later without changing the decisions recorded here.
+
+## Gameplay continuity schema extension
+
+Goose migrations `003_gameplay_continuity.sql` and `004_initialize_agent_relationships.sql` add five Tiger Cloud tables:
+
+| Table | Purpose |
+|---|---|
+| `mysteries` | Current question, competing explanations, evidence summary, optional next observation, open/resolved state, source rounds, version |
+| `mystery_revisions` | Bounded before/after snapshots and reason for opening, advancing, resolving, or reopening a question |
+| `agent_relationships` | Twelve directed pairs per four-agent game, with qualitative trust, rapport, and a rolling summary |
+| `agent_relationship_revisions` | Meaningful relationship changes with source round and version |
+| `tradition_influences` | Concise culture citations, retaining the tradition version/state agents actually received |
+
+All references are game-scoped composite foreign keys. The worker holds the existing game/round transaction locks, validates expected versions, enforces the three-open-mystery limit, and commits these records with existing lore and the chronicle. Deferred source triggers require a completed discovery for mystery revisions and a completed discovery/council for relationship revisions and culture influences. Unique entity/version and entity/source-round constraints prevent duplicate revisions. New tables cascade with game deletion and index read/history/source paths.
+
+Migration 004 initializes neutral relationships without inventing historical incidents. New games initialize their directed pairs in their creation transaction. No old chronicles, mysteries, or culture influences are generated during migration. Disabling gameplay features preserves stored history; migration 004's down step intentionally preserves relationships.
+
+The [gameplay plan](./GAMEPLAY_EVOLUTION_PLAN.md#7-proposed-persistence-model) contains the relationship diagram. Auth and images remain in Supabase; these application tables belong exclusively in Tiger Cloud.

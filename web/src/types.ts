@@ -38,6 +38,7 @@ export interface BeliefRevision {
   created_at?: string
 }
 export interface Tradition {
+  version?: number
   id: string
   type: 'myth' | 'ritual' | 'taboo'
   title: string
@@ -145,3 +146,14 @@ export interface SessionUser { id: string; email?: string }
 
 export interface ApiEnvelope<T> { data: T; request_id?: string }
 export interface ApiErrorShape { error?: string | { code?: string; message?: string }; code?: string; request_id?: string; message?: string }
+
+export interface Mystery {
+ id: string; game_id: string; title: string; question: string; state: 'open' | 'resolved';
+ explanations: { key: string; claim: string; agent_ids: string[] }[];
+ evidence_summary: string; next_observation: string; origin_round_id: string; latest_round_id: string; version: number;
+}
+export interface Relationship {
+ id: string; from_agent_id: string; to_agent_id: string; trust: 'cautious' | 'neutral' | 'trusting'; rapport: 'tense' | 'neutral' | 'warm'; summary: string; latest_round_id?: string; version: number;
+}
+export interface LoreRevision { id: string; source_round_id: string; version: number; kind: string; reason: string; created_at: string; before?: unknown; after: unknown }
+export interface TraditionInfluence { id: string; tradition_id: string; agent_id: string; category: string; explanation: string; tradition_version: number; tradition_state: string; round_id: string }

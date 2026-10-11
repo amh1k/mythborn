@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/amh1k/mythborn/internal/domain"
+	"github.com/amh1k/mythborn/internal/gameplay"
 )
 
 type Dispatcher interface {
@@ -130,6 +131,7 @@ type Memory struct {
 // RoundContext is an activity-loaded snapshot. It is passed to model
 // activities only as needed and is not written back as debate history.
 type RoundContext struct {
+	Gameplay         *gameplay.Context   `json:"gameplay,omitempty"`
 	Game             domain.Game         `json:"game"`
 	Round            domain.Round        `json:"round"`
 	Observation      *ObservationContext `json:"observation,omitempty"`
@@ -139,11 +141,12 @@ type RoundContext struct {
 }
 
 type AgentReaction struct {
-	EventID        domain.ID       `json:"event_id"`
-	AgentID        domain.ID       `json:"agent_id"`
-	Interpretation string          `json:"interpretation"`
-	Reasoning      string          `json:"reasoning"`
-	TraditionIdeas []TraditionIdea `json:"tradition_ideas,omitempty"`
+	Influences     []gameplay.Influence `json:"influences,omitempty"`
+	EventID        domain.ID            `json:"event_id"`
+	AgentID        domain.ID            `json:"agent_id"`
+	Interpretation string               `json:"interpretation"`
+	Reasoning      string               `json:"reasoning"`
+	TraditionIdeas []TraditionIdea      `json:"tradition_ideas,omitempty"`
 }
 
 // DebatePreview exposes only public contributions from the current round.
@@ -229,12 +232,14 @@ type TraditionSupport struct {
 }
 
 type AgentRebuttal struct {
-	EventID           domain.ID          `json:"event_id"`
-	AgentID           domain.ID          `json:"agent_id"`
-	Response          string             `json:"response"`
-	BeliefProposals   []BeliefProposal   `json:"belief_proposals,omitempty"`
-	TraditionSupport  []TraditionSupport `json:"tradition_support,omitempty"`
-	NewTraditionIdeas []TraditionIdea    `json:"new_tradition_ideas,omitempty"`
+	RelationshipProposals []gameplay.RelationshipProposal `json:"relationship_proposals,omitempty"`
+	Influences            []gameplay.Influence            `json:"influences,omitempty"`
+	EventID               domain.ID                       `json:"event_id"`
+	AgentID               domain.ID                       `json:"agent_id"`
+	Response              string                          `json:"response"`
+	BeliefProposals       []BeliefProposal                `json:"belief_proposals,omitempty"`
+	TraditionSupport      []TraditionSupport              `json:"tradition_support,omitempty"`
+	NewTraditionIdeas     []TraditionIdea                 `json:"new_tradition_ideas,omitempty"`
 }
 
 type TraditionChange struct {
@@ -248,17 +253,20 @@ type TraditionChange struct {
 }
 
 type HistorianRecord struct {
-	Title      string                  `json:"title"`
-	Outcome    domain.ChronicleOutcome `json:"outcome"`
-	Verdict    string                  `json:"verdict"`
-	Body       string                  `json:"body"`
-	Suggestion *string                 `json:"suggestion,omitempty"`
-	Metadata   map[string]any          `json:"metadata,omitempty"`
+	Mysteries  []gameplay.MysteryProposal `json:"mysteries,omitempty"`
+	Influences []gameplay.Influence       `json:"influences,omitempty"`
+	Title      string                     `json:"title"`
+	Outcome    domain.ChronicleOutcome    `json:"outcome"`
+	Verdict    string                     `json:"verdict"`
+	Body       string                     `json:"body"`
+	Suggestion *string                    `json:"suggestion,omitempty"`
+	Metadata   map[string]any             `json:"metadata,omitempty"`
 }
 
 // RoundCommit is the complete atomic finalization request. Repository code
 // owns the transaction, version reads, revision writes, and processed marker.
 type RoundCommit struct {
+	Gameplay           gameplay.Changes  `json:"gameplay,omitempty"`
 	EventID            domain.ID         `json:"event_id"`
 	ProcessedCommandID domain.ID         `json:"processed_command_id"`
 	Chronicle          domain.Chronicle  `json:"chronicle"`
@@ -298,6 +306,8 @@ type MessengerCommit struct {
 }
 
 type AgentRequest struct {
+	PlayerRole  domain.PlayerRole   `json:"player_role,omitempty"`
+	Gameplay    *gameplay.Context   `json:"gameplay,omitempty"`
 	RequestID   domain.ID           `json:"request_id"`
 	GameID      domain.ID           `json:"game_id"`
 	Agent       AgentContext        `json:"agent"`

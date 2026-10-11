@@ -148,12 +148,12 @@ Imagine a record assembled over time by people trying to explain their surroundi
 Use three recurring devices:
 
 - **Evidence plate:** the player's photo, a factual caption, and the discovery number.
-- **Speaker mark:** one consistent emblem and a clear name for each agent.
+- **Speaker signature:** a consistent printed initial and a clear name and role for each agent, shared between the roster, agent views, and debate.
 - **Historical annotation:** a compact note showing a real belief or tradition change and the round that caused it.
 
 Those devices should recur across the app. Their content should come from the player's world. Avoid manufacturing meaningful-looking stamps, maps, dates, or statistics when no corresponding state exists.
 
-This direction intentionally revises the broad medieval typography, rotating scenery, and repeated banners in [the current style guide](web/STYLE_GUIDE.md). Update that guide when the new direction is adopted so future work follows one set of rules.
+The civilization UI follow-up now implements a typographic journal header, photo preview, an open council roster, selectable agent nameplates, and reading layouts for rounds, beliefs, culture, history, and settings. The camera and agent profession pictograms are removed from these views. [The style guide](web/STYLE_GUIDE.md) is updated to match. The introductory atlas retains its approved motion design; remaining editorial and live acceptance work below is still outstanding.
 
 ### Rule 1 — Give every screen one dominant purpose
 
@@ -171,7 +171,7 @@ Use cards where they group a real interactive unit. Use lists, spacing, and rule
 
 ### Rule 2 — Reduce decorative typography
 
-- Keep Uncial Antiqua for the wordmark and occasional short chapter titles.
+- The redesigned brand uses a custom, unboxed M and a lowercase Almendra wordmark. Reserve Uncial Antiqua for occasional short chapter titles, rather than the logo.
 - Use one readable face for body text, controls, and routine headings. DM Sans already exists and can serve that role without adding another dependency.
 - Keep Almendra for selected names or short quotations only if it improves the composition. Do not automatically use it for every contribution and long chronicle paragraph.
 - Start body copy around 16–18 px with 1.5–1.7 line height. Aim for roughly 55–75 characters per line on wide screens.
@@ -250,9 +250,13 @@ Do not add generic scores such as “culture energy” or “civilization wisdom
 
 ### Rule 9 — Use motion to explain change
 
-Prefer a restrained reveal when a response arrives or a stage completes. Remove automatic scenery rotation from routine world-management screens in the proposed redesign. Keep any decorative motion limited to an intentional introductory setting.
+The requested motion redesign now keeps the introductory atlas moving, with no slideshow controls. Hero copy arrives in stages, civilization artwork responds gently to the pointer, cards lift on hover, and new records reveal as they enter view. Tabs, selections, forms, upload readiness, disclosures, mobile navigation, and theme icons provide immediate feedback. This supersedes the earlier recommendation to remove atlas rotation.
+
+Keep this motion language consistent: roughly 160 ms for immediate feedback, 280 ms for control state changes, and 620–1000 ms for entrances and artwork settling. Reserve lifts for actionable cards; reading surfaces receive quiet ink and border changes. New responses animate once; polling and retry countdowns must not replay entrances. Do not introduce decorative processing animations on completed, paused, or quota-waiting agents. The shared implementation lives in `web/src/styles/interaction-motion.css` and `web/src/lib/use-app-motion.ts`.
 
 Maintain reduced-motion support, visible focus, keyboard operation, and comfortable touch targets. Never animate a fake percentage or imply an exact completion time when only a retry deadline is known.
+
+Loading states now use a custom compass spinner with contextual copy. Opening a civilization gets a centered heading and a short explanation; smaller panels use a compact version naming the records being retrieved. Keep the compass stationary under reduced motion, announce the message as a status, and replace the loader as soon as the content is ready. Do not add artificial waits or invented progress estimates.
 
 ### Rule 10 — Design the awkward states first
 

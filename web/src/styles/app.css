@@ -1,12 +1,12 @@
 #root { min-height: 100vh; display: flex; flex-direction: column; }
 .app-main { flex: 1; padding-block: var(--space-8) var(--space-16); }
 .app-loading { padding-top: 18vh; }
-.site-header { border-bottom: 1px solid var(--border-subtle); background: var(--surface-page); }
+.site-header { background: var(--surface-page); }
 .header-inner { min-height: 5.5rem; display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
-.brand { display: inline-flex; gap: .75rem; align-items: center; color: var(--text-primary); text-decoration: none; font-family: var(--font-title); font-weight: 400; font-size: 1.5rem; letter-spacing: .025em; }
+.brand { display: inline-flex; gap: .6rem; align-items: center; color: var(--text-primary); text-decoration: none; font-family: var(--font-display); font-weight: 700; font-size: 1.8rem; letter-spacing: -.035em; }
 .brand:hover { color: var(--text-primary); }
-.brand-mark { display: block; width: 2.75rem; height: 2.75rem; flex: 0 0 2.75rem; }
-.brand-mark img { display: block; width: 100%; height: 100%; }
+.brand-mark { display: block; width: 2.75rem; height: 2.75rem; flex: 0 0 2.75rem; background: currentColor; -webkit-mask: url('/brand/mythborn-mark.svg') center / contain no-repeat; mask: url('/brand/mythborn-mark.svg') center / contain no-repeat; }
+.brand-wordmark { line-height: 1; padding-bottom: .12em; }
 .header-actions { display: flex; align-items: center; gap: var(--space-5); }
 .theme-toggle { flex: 0 0 auto; min-height: 2.75rem; padding: .6rem .75rem; font-size: var(--text-sm); }
 .theme-toggle svg { flex: 0 0 1.25rem; }
@@ -34,7 +34,7 @@
 .world-symbol { display: grid; width: 3rem; aspect-ratio: 1; place-items: center; color: var(--text-inverse); }
 .world-card h3 { margin-bottom: var(--space-2); font-size: 1.8rem; }
 .world-card > p { margin-bottom: var(--space-3); }
-.world-excerpt { border-left: 2px solid var(--color-copper); padding-left: var(--space-3); color: var(--text-secondary); font-family: var(--font-display); font-size: 1.25rem; }
+.world-excerpt { color: var(--text-secondary); font-family: var(--font-display); font-size: 1.25rem; }
 .card-link { display: flex; justify-content: space-between; margin-top: auto; padding-top: var(--space-4); color: var(--text-primary); font-size: var(--text-sm); font-weight: 600; }
 .welcome-card { display: grid; grid-template-columns: 4rem 1fr auto; align-items: center; gap: var(--space-6); margin: var(--space-10) 0 0; padding: var(--space-8) 0; border-top: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle); }
 .welcome-illustration { width: 4rem; color: var(--accent-secondary); }
@@ -43,7 +43,9 @@
 .empty-state { padding: var(--space-5); color: var(--text-secondary); }
 .loading { color: var(--text-secondary); padding-block: var(--space-5); }
 .notice { border: 1px solid; border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); margin-block: var(--space-3); font-size: var(--text-sm); }
-.notice-error { border-color: var(--status-danger-border); background: var(--color-danger-soft); color: var(--status-danger-text); }
+.notice-error { border: 0; border-radius: 0; padding: .5rem 0; background: transparent; color: var(--status-danger-text); line-height: 1.65; }
+.error-heading { display: flex; align-items: center; gap: .4rem; margin-bottom: .2rem; font-weight: 600; }
+.error-heading svg { flex-shrink: 0; }
 .notice-success { border-color: var(--status-success-border); background: var(--color-success-soft); color: var(--status-success-text); }
 .text-button { border: 0; padding: 0; background: transparent; color: var(--color-sky); text-decoration: underline; text-underline-offset: .15em; cursor: pointer; }
 .text-button:hover { color: var(--color-moss-dark); }
@@ -192,8 +194,8 @@
 .evidence-card p { margin: .5rem 0 0; }
 .decision-card h2 { margin-bottom: var(--space-2); font-size: var(--text-xl); }
 .decision-card textarea { margin-bottom: var(--space-3); }
-.attention-card { margin-block: var(--space-5); padding: var(--space-5); border: 1px solid var(--status-danger-border); border-radius: var(--radius-md); background: var(--color-danger-soft); }
-.attention-card h2 { color: var(--status-danger-text); font-size: var(--text-xl); }
+.attention-card { margin-block: var(--space-5); padding-block: var(--space-3); border: 0; border-radius: 0; background: transparent; }
+.attention-card h2 { color: var(--status-danger-text); font-family: var(--font-display); font-size: var(--text-xl); }
 .chronicle-detail { margin-top: var(--space-5); }
 .chronicle-detail h2 { font-size: var(--text-2xl); }
 .chronicle-body { font-family: var(--font-display); font-size: 1.3rem; line-height: 1.8; max-width: 65ch; }
@@ -324,7 +326,7 @@ em { font-weight: 400; }
 h1 em, .creation-plate h2 em { font-style: normal; color: #e6bc7a; }
 .auth-story-copy { max-width: 39rem; padding: 1.25rem 1.5rem 1.5rem; background: rgb(21 35 48 / 90%); }
 .auth-story-copy > p:last-child { max-width: 29rem; margin: 1.5rem 0 0; font-size: .95rem; color: #ede6db; }
-.auth-story .brand-mark { color: #edb990; }
+.auth-story .brand-mark { color: inherit; }
 .auth-card > .text-muted { margin-bottom: var(--space-8); }
 .auth-layout .form-stack { gap: var(--space-5); }
 .auth-layout input { background: transparent; }
@@ -403,41 +405,28 @@ h1 em, .creation-plate h2 em { font-style: normal; color: #e6bc7a; }
   .header-actions { gap: var(--space-2); }
   .header-actions .theme-toggle { width: 2.75rem; padding: .5rem; }
   .header-actions .theme-toggle span { display: none; }
-  .brand { gap: .5rem; font-size: 1.125rem; }
+  .brand { gap: .5rem; font-size: 1.5rem; }
   .brand-mark { width: 2.5rem; height: 2.5rem; flex-basis: 2.5rem; }
 }
 
 
-/* The atlas is a moving illustrated scene; controls and text remain stationary. */
+/* The atlas is a moving illustrated scene; text remains stationary. */
 .atlas-scenes { position: absolute; inset: 0; z-index: -2; }
 .atlas-scene { position: absolute; inset: 0; opacity: 0; transition: opacity 1200ms ease; }
 .atlas-scene.is-active { opacity: 1; }
 .atlas-scene img { width: 100%; height: 100%; object-fit: cover; animation: scene-drift 20s ease-in-out infinite alternate; }
 .atlas-scene:nth-child(2) img { animation-direction: alternate-reverse; }
 .atlas-scenes[data-playing="false"] img { animation-play-state: paused; }
-.atlas-scene-info { position: absolute; display: flex; align-items: center; gap: 1rem; bottom: 2rem; left: clamp(1.5rem, 4vw, 3.5rem); right: 23rem; }
-.scene-number { flex: 0 0 auto; color: #edb990; font-size: .65rem; letter-spacing: .1em; border-right: 1px solid rgb(237 185 144 / 45%); padding-right: 1rem; }
+.atlas-scene-info { position: absolute; display: flex; align-items: center; gap: 1rem; bottom: 2rem; left: clamp(1.5rem, 4vw, 3.5rem); right: clamp(1.5rem, 4vw, 3.5rem); }
+.scene-number { flex: 0 0 auto; color: #edb990; font-size: .65rem; letter-spacing: .1em; }
 .atlas-scene-info strong { display: block; color: #faf8f3; font-family: var(--font-display); font-size: 1.6rem; font-weight: 700; }
 .atlas-scene-info p { margin: .2rem 0 0; color: #ede6db; font-size: .75rem; line-height: 1.4; }
-.atlas-controls { position: absolute; display: flex; align-items: center; gap: .25rem; bottom: 1.8rem; right: clamp(1rem, 3vw, 2rem); padding: .3rem; border: 1px solid rgb(237 185 144 / 40%); background: rgb(8 20 27 / 75%); }
-.atlas-controls button { display: inline-flex; min-width: 2.75rem; min-height: 2.75rem; justify-content: center; align-items: center; border: 0; background: transparent; color: #faf8f3; cursor: pointer; }
-.atlas-controls button:hover { background: rgb(237 185 144 / 15%); }
-.atlas-controls button:focus-visible { outline-color: #edb990; outline-offset: -3px; }
-.scene-arrow { font-size: 1.2rem; }
-.scene-dots { display: flex; }
-.scene-dot span { width: .45rem; height: .45rem; border: 1px solid #edb990; border-radius: 50%; transition: background-color 150ms ease; }
-.scene-dot.is-active span { background: #edb990; }
-.atlas-controls .scene-play { gap: .5rem; border-left: 1px solid rgb(237 185 144 / 40%); padding: .6rem; font-size: .75rem; }
 @keyframes scene-drift { from { transform: scale(1.03) translateX(-.5%); } to { transform: scale(1.11) translateX(.5%); } }
 @media (max-width: 58rem) {
-  .atlas-scene-info { right: 21rem; }
   .atlas-scene-info p { display: none; }
 }
 @media (max-width: 42rem) {
-  .atlas-scene-info { bottom: 6rem; left: var(--space-6); right: var(--space-6); }
-  .atlas-controls { left: 1rem; right: 1rem; justify-content: space-between; gap: 0; bottom: 1.25rem; }
-  .atlas-controls .scene-dot { min-width: 1.75rem; }
-  .atlas-controls .scene-play { padding-inline: .4rem; }
+  .atlas-scene-info { bottom: 1.5rem; left: var(--space-6); right: var(--space-6); }
   .atlas-scene img { object-position: 60% center !important; }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -448,4 +437,15 @@ h1 em, .creation-plate h2 em { font-style: normal; color: #e6bc7a; }
 
 /* Recovery controls and request references complement the illustrated layout. */
 .round-control { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); margin-block: var(--space-3); }
-.error-reference { display: block; margin-top: .5rem; overflow-wrap: anywhere; }
+.error-reference { display: block; margin-top: .5rem; color: var(--text-secondary); font-size: var(--text-xs); overflow-wrap: anywhere; }
+
+/* Continuity records extend the illustrated layouts without replacing their visual language. */
+.continuity-panel { margin-block: 1.5rem; }
+.continuity-card { padding: clamp(1rem, 3vw, 1.75rem); margin-block: 1rem; overflow-wrap: anywhere; }
+.continuity-card h3 { margin: 0; }
+.continuity-card details > summary, .continuity-panel > summary { cursor: pointer; padding-block: .65rem; }
+.continuity-entry { padding-block: 1rem; border-bottom: 1px solid var(--border-subtle); overflow-wrap: anywhere; }
+.continuity-entry h4 { margin-block: 0 .4rem; }
+.continuity-history { padding-inline-start: 1.25rem; }
+.continuity-history li { padding-block: .75rem; }
+.continuity-history-actions { margin-top: 1rem; }

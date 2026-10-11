@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/amh1k/mythborn/internal/domain"
+	"github.com/amh1k/mythborn/internal/gameplay"
 	"github.com/amh1k/mythborn/internal/workflow"
 	"go.temporal.io/sdk/temporal"
 	tw "go.temporal.io/sdk/workflow"
@@ -160,14 +161,17 @@ func Agent(ctx tw.Context, request workflow.AgentRequest) (workflow.AgentResult,
 }
 
 type RoundProgress struct {
-	Preview          *workflow.DebatePreview `json:"-"`
-	Fingerprint      string
-	Reactions        []workflow.AgentReaction
-	Candidates       []workflow.TraditionIdea
-	Rebuttals        []workflow.AgentRebuttal
-	BeliefProposals  []workflow.BeliefProposal
-	TraditionChanges []workflow.TraditionChange
-	HistorianRecord  *workflow.HistorianRecord
+	Gameplay            *gameplay.Context
+	RelationshipChanges []gameplay.RelationshipProposal
+	CultureCitations    []gameplay.Influence
+	Preview             *workflow.DebatePreview `json:"-"`
+	Fingerprint         string
+	Reactions           []workflow.AgentReaction
+	Candidates          []workflow.TraditionIdea
+	Rebuttals           []workflow.AgentRebuttal
+	BeliefProposals     []workflow.BeliefProposal
+	TraditionChanges    []workflow.TraditionChange
+	HistorianRecord     *workflow.HistorianRecord
 }
 
 func handleCommand(ctx tw.Context, command workflow.Command, progress map[domain.ID]*RoundProgress) error {
@@ -289,6 +293,15 @@ func processRound(ctx tw.Context, command workflow.Command, progressByRound map[
 			return tw.ExecuteActivity(ctx, activitySetStage, command.GameID, command.RoundID, domain.RoundStatusRunning, stageForDescription(current.Observation.DescriptionStatus)).Get(ctx, nil)
 		}
 	}
+	continuityVersion := tw.GetVersion(ctx, "gameplay-continuity/"+string(command.RoundID), tw.DefaultVersion, 1)
+	if continuityVersion != tw.DefaultVersion && progress.Gameplay == nil && len(progress.Reactions) == 0 && len(progress.Rebuttals) == 0 && progress.HistorianRecord == nil {
+		var continuity gameplay.Context
+		if err := tw.ExecuteActivity(ctx, "LoadGameplay", current).Get(ctx, &continuity); err != nil {
+			return err
+		}
+		progress.Gameplay = &continuity
+	}
+	current.Gameplay = progress.Gameplay
 	if current.Round.Kind == domain.RoundKindClosing {
 		return finalizeClosing(ctx, command, current, progress.Preview)
 	}
@@ -347,9 +360,10 @@ func processRound(ctx tw.Context, command workflow.Command, progressByRound map[
 		return err
 	}
 	progress.Preview.Phase = "writing"
+	progress.RelationshipChanges, progress.CultureCitations = continuityContributions(progress.Reactions, progress.Rebuttals)
 	if progress.HistorianRecord == nil {
 		var record workflow.HistorianRecord
-		if err = modelActivity(ctx, command, progress.Preview, current.HistorianAgentID, "writing", activityHistorian, activitiesHistorianInput{Context: current, Reactions: progress.Reactions, Rebuttals: progress.Rebuttals, BeliefChanges: progress.BeliefProposals, Traditions: progress.TraditionChanges}, &record); err != nil {
+		if err = modelActivity(ctx, command, progress.Preview, current.HistorianAgentID, "writing", activityHistorian, activitiesHistorianInput{Context: current, Reactions: progress.Reactions, Rebuttals: progress.Rebuttals, BeliefChanges: progress.BeliefProposals, Traditions: progress.TraditionChanges, RelationshipChanges: progress.RelationshipChanges, CultureCitations: progress.CultureCitations}, &record); err != nil {
 			return err
 		}
 		progress.HistorianRecord = &record
@@ -357,7 +371,7 @@ func processRound(ctx tw.Context, command workflow.Command, progressByRound map[
 	record := *progress.HistorianRecord
 	outcome := record.Outcome
 	chronicle := domain.Chronicle{ID: StableTraditionID(command.GameID, command.RoundID, "chronicle"), GameID: command.GameID, RoundID: command.RoundID, HistorianAgentID: current.HistorianAgentID, Title: record.Title, Outcome: &outcome, Verdict: record.Verdict, Body: record.Body, Suggestion: record.Suggestion, Metadata: record.Metadata}
-	commit := workflow.RoundCommit{EventID: command.EventID, ProcessedCommandID: command.EventID, Chronicle: chronicle, BeliefProposals: progress.BeliefProposals, TraditionChanges: progress.TraditionChanges}
+	commit := workflow.RoundCommit{EventID: command.EventID, ProcessedCommandID: command.EventID, Chronicle: chronicle, BeliefProposals: progress.BeliefProposals, TraditionChanges: progress.TraditionChanges, Gameplay: gameplay.Changes{Mysteries: record.Mysteries, Relationships: progress.RelationshipChanges, Influences: record.Influences}}
 	if err = tw.ExecuteActivity(ctx, activityCommitRound, struct {
 		Commit workflow.RoundCommit `json:"commit"`
 	}{commit}).Get(ctx, nil); err != nil {
@@ -392,11 +406,13 @@ type activitiesDescriptionResult struct {
 	Reason      string `json:"reason,omitempty"`
 }
 type activitiesHistorianInput struct {
-	Context       workflow.RoundContext      `json:"context"`
-	Reactions     []workflow.AgentReaction   `json:"reactions,omitempty"`
-	Rebuttals     []workflow.AgentRebuttal   `json:"rebuttals,omitempty"`
-	BeliefChanges []workflow.BeliefProposal  `json:"belief_changes,omitempty"`
-	Traditions    []workflow.TraditionChange `json:"traditions,omitempty"`
+	RelationshipChanges []gameplay.RelationshipProposal `json:"relationship_changes,omitempty"`
+	CultureCitations    []gameplay.Influence            `json:"culture_citations,omitempty"`
+	Context             workflow.RoundContext           `json:"context"`
+	Reactions           []workflow.AgentReaction        `json:"reactions,omitempty"`
+	Rebuttals           []workflow.AgentRebuttal        `json:"rebuttals,omitempty"`
+	BeliefChanges       []workflow.BeliefProposal       `json:"belief_changes,omitempty"`
+	Traditions          []workflow.TraditionChange      `json:"traditions,omitempty"`
 }
 
 func descriptionInput(c workflow.Command) struct {
@@ -457,7 +473,10 @@ func runAgentPhase(ctx tw.Context, command workflow.Command, current workflow.Ro
 			continue
 		}
 		requestID := StableTraditionID(command.GameID, command.RoundID, string(command.EventID)+"/"+string(agent.Agent.ID)+"/"+phase)
-		request := workflow.AgentRequest{RequestID: requestID, GameID: command.GameID, Agent: agent, RoundID: command.RoundID, RoundKind: current.Round.Kind, Observation: current.Observation, Traditions: current.Traditions, Phase: phase, Reactions: reactions, Candidates: candidates}
+		request := workflow.AgentRequest{Gameplay: current.Gameplay, RequestID: requestID, GameID: command.GameID, Agent: agent, RoundID: command.RoundID, RoundKind: current.Round.Kind, Observation: current.Observation, Traditions: current.Traditions, Phase: phase, Reactions: reactions, Candidates: candidates}
+		if current.Gameplay != nil && current.Gameplay.ContractVersion > 0 {
+			request.PlayerRole = current.Game.PlayerRole
+		}
 		childID := workflow.AgentWorkflowID(command.GameID, agent.Agent.ID) + "/round/" + string(command.RoundID) + "/event/" + string(command.EventID) + "/" + phase
 		childCtx := tw.WithChildOptions(ctx, tw.ChildWorkflowOptions{WorkflowID: childID})
 		var future tw.Future = tw.ExecuteChildWorkflow(childCtx, workflow.AgentWorkflowName, request)

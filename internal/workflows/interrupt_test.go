@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/amh1k/mythborn/internal/domain"
+	"github.com/amh1k/mythborn/internal/gameplay"
 	"github.com/amh1k/mythborn/internal/workflow"
 	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/temporal"
@@ -16,6 +17,7 @@ import (
 func TestDeletionInterruptsExtendedQuotaWait(t *testing.T) {
 	var suite testsuite.WorkflowTestSuite
 	env := suite.NewTestWorkflowEnvironment()
+	env.RegisterActivityWithOptions(func(context.Context, workflow.RoundContext) (gameplay.Context, error) { return gameplay.Context{}, nil }, activity.RegisterOptions{Name: "LoadGameplay"})
 	current := workflow.RoundContext{Game: domain.Game{ID: "game"}, Round: domain.Round{ID: "round", GameID: "game", Kind: domain.RoundKindDiscovery, Status: domain.RoundStatusRunning, Stage: domain.RoundStageReacting}, Observation: &workflow.ObservationContext{DescriptionStatus: "accepted"}}
 	for _, id := range []domain.ID{"first", "second", "third", "fourth"} {
 		current.Agents = append(current.Agents, workflow.AgentContext{Agent: domain.Agent{ID: id, GameID: "game"}})
