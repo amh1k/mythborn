@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mythborn — Storyboard v1</title>
+  <style>
+    @font-face { font-family: Almendra; src: url("../../web/public/fonts/almendra-regular.ttf") format("truetype"); font-weight: 400; }
+    @font-face { font-family: Almendra; src: url("../../web/public/fonts/almendra-bold.ttf") format("truetype"); font-weight: 700; }
+    @font-face { font-family: Uncial; src: url("../../web/public/fonts/uncial-antiqua.ttf") format("truetype"); font-weight: 400; }
+    @font-face { font-family: DM; src: url("../../web/public/fonts/dm-sans-regular.ttf") format("truetype"); font-weight: 400; }
+    @font-face { font-family: DM; src: url("../../web/public/fonts/dm-sans-semibold.ttf") format("truetype"); font-weight: 600; }
+    :root {
+      --paper: #f3f0e9; --raised: #faf8f3; --deep: #e8e3d8; --ink: #202932;
+      --night: #152330; --quiet: #5c6269; --rule: #d0cec5; --copper: #ad3f2c;
+      --gold: #e6bc7a; --green: #315b42;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font-family: DM, sans-serif; }
+    .page { max-width: 1640px; margin: 0 auto; padding: 46px 44px 72px; }
+    .masthead { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--rule); padding-bottom: 20px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-family: Uncial, Georgia, serif; font-size: 21px; }
+    .brand img { width: 36px; height: 36px; object-fit: contain; }
+    .version { font-size: 12px; letter-spacing: .15em; color: var(--quiet); text-transform: uppercase; }
+    .intro { display: grid; grid-template-columns: 1.25fr .75fr; gap: 48px; align-items: end; padding: 38px 0 34px; }
+    .eyebrow { color: var(--copper); font-size: 12px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; }
+    h1 { margin: 8px 0 10px; font: 700 clamp(42px, 5vw, 68px)/1.02 Almendra, Georgia, serif; letter-spacing: -.035em; }
+    .dek { margin: 0; max-width: 720px; color: var(--quiet); font-size: 17px; line-height: 1.55; }
+    .spec { justify-self: end; text-align: right; color: var(--quiet); font-size: 13px; line-height: 1.8; }
+    .spec strong { display: block; color: var(--ink); font: 700 24px Almendra, Georgia, serif; }
+    .spine { display: flex; gap: 12px; align-items: center; margin: 0 0 42px; padding: 14px 18px; border-block: 1px solid var(--rule); font-size: 14px; }
+    .spine b { color: var(--copper); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; white-space: nowrap; }
+    .act { margin-top: 34px; }
+    .act-head { display: flex; gap: 14px; align-items: center; margin-bottom: 15px; }
+    .act-num { color: var(--copper); font: 700 19px Almendra, Georgia, serif; }
+    .act-head h2 { margin: 0; font: 700 24px Almendra, Georgia, serif; }
+    .act-head p { margin: 0 0 0 auto; color: var(--quiet); font-size: 12px; letter-spacing: .04em; }
+    .grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 24px; }
+    .card { min-width: 0; }
+    .art { position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; background: var(--night); border: 1px solid var(--rule); container-type: inline-size; }
+    .art > img.screen { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+    .art > img.cover-top { object-position: center top; }
+    .art > img.cover-low { object-position: center 72%; }
+    .art::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, rgb(21 35 48 / .38), transparent 50%); }
+    .art.plain::after { display: none; }
+    .callout { position: absolute; z-index: 1; left: 5%; bottom: 8%; max-width: 61%; padding: 3.2cqw 3.8cqw; background: var(--raised); color: var(--ink); box-shadow: 0 8px 24px rgb(21 35 48 / .18); }
+    .callout .kicker { display: block; margin-bottom: .7cqw; color: var(--copper); font-size: 1.15cqw; font-weight: 600; letter-spacing: .15em; text-transform: uppercase; }
+    .callout strong { display: block; font: 700 4cqw/1.04 Almendra, Georgia, serif; }
+    .callout.small { left: auto; right: 4%; bottom: 7%; max-width: 43%; }
+    .callout.small strong { font-size: 3cqw; }
+    .tagline { position: absolute; z-index: 1; top: 8%; left: 5%; max-width: 48%; color: var(--raised); font: 700 5.7cqw/1.06 Almendra, Georgia, serif; text-shadow: 0 2px 15px rgb(21 35 48 / .55); }
+    .tagline em { color: var(--gold); font-style: normal; }
+    .mini { position: absolute; z-index: 1; top: 7%; right: 5%; color: var(--raised); font-size: 1.15cqw; font-weight: 600; letter-spacing: .13em; text-transform: uppercase; }
+    .crop-note { position: absolute; z-index: 2; right: 3%; top: 5%; padding: .8cqw 1cqw; color: var(--ink); background: var(--raised); font-size: 1.05cqw; }
+    .tower { position: absolute; inset: 0 0 0 43%; background: url("../../web/public/art/world-watchtower.webp") center 44%/cover; }
+    .paper-left { position: absolute; inset: 0 40% 0 0; background: var(--paper); padding: 8% 0 0 7%; }
+    .paper-left .label { color: var(--copper); font: 600 1.3cqw DM, sans-serif; letter-spacing: .15em; text-transform: uppercase; }
+    .paper-left h3 { max-width: 85%; margin: 6% 0 0; font: 700 4.6cqw/1.03 Almendra, Georgia, serif; }
+    .paper-left p { max-width: 80%; color: var(--quiet); font-size: 1.5cqw; line-height: 1.35; }
+    .role-row { display: flex; gap: 1.3cqw; margin-top: 8%; color: var(--ink); font-size: 1.4cqw; }
+    .role-row span { border-top: 2px solid var(--copper); padding-top: .8cqw; }
+    .debate { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 2.1cqw; padding: 5%; color: var(--raised); background: var(--night); }
+    .debate:before { content: "THE AGENTS’ DEBATE"; position: absolute; top: 5%; right: 5%; color: var(--gold); font-size: 1cqw; font-weight: 600; letter-spacing: .17em; }
+    .quote { padding: 2.5cqw 2cqw 1.7cqw; border-top: 1px solid rgb(250 248 243 / .32); }
+    .quote:nth-child(odd) { margin-top: 7%; }
+    .quote b { display: block; color: var(--gold); font: 700 2cqw Almendra, Georgia, serif; }
+    .quote p { margin: .6cqw 0 0; font: 400 1.45cqw/1.35 Almendra, Georgia, serif; }
+    .progress { position: absolute; right: 6%; bottom: 8%; color: var(--raised); font-size: 1.2cqw; }
+    .progress i { display: inline-block; width: 1.1cqw; height: 1.1cqw; border: 2px solid var(--gold); border-radius: 50%; margin-right: .5cqw; vertical-align: -.1cqw; }
+    .beliefs { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 2.5cqw; padding: 6%; background: var(--paper); }
+    .beliefs > div { padding: 4%; border-bottom: 1px solid var(--rule); }
+    .beliefs small { color: var(--copper); font-size: 1.1cqw; letter-spacing: .16em; text-transform: uppercase; }
+    .beliefs h3 { margin: .6cqw 0; font: 700 2.4cqw Almendra, Georgia, serif; }
+    .beliefs p { color: var(--quiet); font: 400 1.35cqw/1.4 DM, sans-serif; }
+    .beliefs .mystery { border: 1px solid var(--rule); padding: 4%; background: var(--raised); }
+    .culture { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr .82fr; gap: 2cqw; padding: 6%; background: var(--paper); }
+    .culture .copy { padding-top: 5%; }
+    .culture h3 { margin: 1cqw 0; font: 700 3.2cqw Almendra, Georgia, serif; }
+    .culture p { max-width: 90%; color: var(--quiet); font-size: 1.35cqw; line-height: 1.4; }
+    .culture .ritual { align-self: center; padding: 8%; border: 1px solid var(--rule); background: var(--raised); }
+    .culture .ritual b { color: var(--copper); font-size: 1cqw; letter-spacing: .16em; text-transform: uppercase; }
+    .culture .ritual h4 { margin: .7cqw 0; font: 700 2.3cqw Almendra, Georgia, serif; }
+    .culture .ritual p { margin: 0; color: var(--ink); font: 400 1.3cqw/1.45 Almendra, Georgia, serif; }
+    .endcard { position: absolute; inset: 0; display: grid; place-items: center; color: var(--raised); background: var(--night); text-align: center; }
+    .endcard .mark { display: flex; justify-content: center; align-items: center; gap: 1cqw; font: 700 4cqw Uncial, Georgia, serif; }
+    .endcard img { width: 5cqw; height: 5cqw; object-fit: contain; filter: brightness(0) saturate(100%) invert(95%) sepia(8%) saturate(211%) hue-rotate(342deg) brightness(104%); }
+    .endcard p { margin: 2cqw 0 0; color: var(--gold); font: 700 2.8cqw Almendra, Georgia, serif; }
+    .meta { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; padding: 10px 1px 4px; }
+    .meta strong { font-size: 11px; letter-spacing: .11em; text-transform: uppercase; }
+    .meta span { color: var(--quiet); font-size: 11px; white-space: nowrap; }
+    .note { min-height: 44px; margin: 0; color: var(--quiet); font-size: 12px; line-height: 1.45; }
+    .note b { color: var(--ink); }
+    .chip { display: inline-block; margin-top: 7px; padding: 4px 8px; border: 1px solid var(--rule); color: var(--copper); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; }
+    .closing { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 38px; }
+    .closing-card { padding: 20px 22px; border: 1px solid var(--rule); background: var(--raised); }
+    .closing-card h2 { margin: 0 0 16px; font: 700 22px Almendra, Georgia, serif; }
+    .seamline { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; color: var(--quiet); font-size: 11px; }
+    .seamline span { padding: 6px 8px; border: 1px solid var(--rule); background: var(--paper); }
+    .seamline i { color: var(--copper); font-style: normal; }
+    .tokens { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+    .swatch { display: inline-flex; gap: 6px; align-items: center; color: var(--quiet); font-size: 11px; }
+    .swatch i { width: 17px; height: 17px; display: inline-block; border: 1px solid var(--rule); background: var(--sw); }
+    .type-sample { width: 100%; color: var(--quiet); font-size: 11px; }
+    .type-sample b { color: var(--ink); font: 700 18px Almendra, Georgia, serif; }
+    .foot { margin-top: 32px; padding-top: 14px; border-top: 1px solid var(--rule); display: flex; justify-content: space-between; color: var(--quiet); font-size: 11px; }
+    @media (max-width: 980px) { .page { padding: 24px 20px 50px; } .intro { grid-template-columns: 1fr; gap: 16px; } .spec { justify-self: start; text-align: left; } .grid { grid-template-columns: repeat(2,minmax(0,1fr)); } .closing { grid-template-columns: 1fr; } }
+    @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } .act-head p { display: none; } .spine { align-items: flex-start; flex-direction: column; } }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="masthead">
+      <div class="brand"><img src="capture-home-final/assets/svgs/logo-24eb1a94.svg" alt=""> Mythborn <span style="font:400 12px DM,sans-serif;color:var(--quiet);letter-spacing:.14em;text-transform:uppercase">/ film</span></div>
+      <div class="version">Storyboard · v1</div>
+    </header>
+    <section class="intro">
+      <div>
+        <div class="eyebrow">Product walkthrough · demo loop</div>
+        <h1>One photograph.<br>Many histories.</h1>
+        <p class="dek">A watchtower enters the Valley of First Rain as an image. Four agents read it differently. The civilization keeps the debate, the question, and a ritual that outlives its origin.</p>
+      </div>
+      <div class="spec"><strong>90 seconds · 9 scenes</strong>1920 × 1080 · Silent · Text-led<br>Actual Mythborn screens · Local demo fixtures</div>
+    </section>
+    <div class="spine"><b>Visual spine</b><span>The watchtower image returns as the story moves from observation to disagreement, then to shared memory.</span></div>
+
+    <section class="act">
+      <div class="act-head"><span class="act-num">I</span><h2>Enter the world</h2><p>Promise → player → place</p></div>
+      <div class="grid">
+        <article class="card" id="frame-01">
+          <div class="art"><img class="screen" src="capture-home-final/screenshots/scroll-000.png" alt="Mythborn atlas hero"><span class="mini">The civilization atlas</span><div class="callout small"><span class="kicker">A world begins</span><strong>With what it notices.</strong></div></div>
+          <div class="meta"><strong>01 · Their histories</strong><span>00:00–00:08</span></div>
+          <p class="note"><b>First:</b> harbor detail opens to the atlas. <b>Seam:</b> warm dissolve into the founding screen.</p><span class="chip">Dissolve</span>
+        </article>
+        <article class="card" id="frame-02">
+          <div class="art plain"><img class="screen" src="capture-interactions/02-founding.png" alt="Founding the Valley of First Rain"><span class="crop-note">Valley of First Rain · Messenger</span></div>
+          <div class="meta"><strong>02 · A name and a point of view</strong><span>00:08–00:17</span></div>
+          <p class="note"><b>First:</b> the name settles into the real form. <b>Seam:</b> a measured push into the world page.</p><span class="chip">Push</span>
+        </article>
+        <article class="card" id="frame-03">
+          <div class="art plain"><img class="screen cover-top" src="capture-civ-final/screenshots/full-page.png" alt="Valley of First Rain civilization page"><span class="crop-note">Actual civilization page · top-down camera</span></div>
+          <div class="meta"><strong>03 · One world, taking shape</strong><span>00:17–00:26</span></div>
+          <p class="note"><b>First:</b> banner and civilization name hold. <b>Seam:</b> move down the page toward its latest discovery.</p><span class="chip">Vertical travel</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="act">
+      <div class="act-head"><span class="act-num">II</span><h2>Ask what the tower means</h2><p>Image → readings → rebuttals</p></div>
+      <div class="grid">
+        <article class="card" id="frame-04">
+          <div class="art plain"><img class="screen" src="capture-interactions/03-discovery-photo.png" alt="Watchtower photograph in the discovery form"><span class="crop-note">Bundled project photo · world-watchtower.webp</span></div>
+          <div class="meta"><strong>04 · Bring a photograph</strong><span>00:26–00:36</span></div>
+          <p class="note"><b>First:</b> the tower image becomes the focal point. <b>Seam:</b> cut on the image into the council.</p><span class="chip">Cut on image</span>
+        </article>
+        <article class="card" id="frame-05">
+          <div class="art plain"><img class="screen" src="capture-interactions/05-agent-debate.png" alt="Four agents' first interpretations"><span class="crop-note">Promise · flood measure · road watch · memory</span></div>
+          <div class="meta"><strong>05 · Four readings</strong><span>00:36–00:46</span></div>
+          <p class="note"><b>First:</b> each real agent label and reading appears in turn. <b>Seam:</b> copper rule crosses to the response state.</p><span class="chip">Rule wipe</span>
+        </article>
+        <article class="card" id="frame-06">
+          <div class="art plain"><img class="screen cover-low" src="capture-interactions/05-agent-debate.png" alt="Captured debate state with rebuttal progress"><span class="crop-note">Captured local fixture · 2 of 4 rebuttals</span></div>
+          <div class="meta"><strong>06 · Disagreement stays visible</strong><span>00:46–00:58</span></div>
+          <p class="note"><b>First:</b> processing state comes into focus. <b>Seam:</b> dissolve to the settled chronicle; no fake progress.</p><span class="chip">Dissolve</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="act">
+      <div class="act-head"><span class="act-num">III</span><h2>Keep what remains</h2><p>Record → belief → culture</p></div>
+      <div class="grid">
+        <article class="card" id="frame-07">
+          <div class="art plain"><img class="screen" src="capture-interactions/04-chronicle.png" alt="Chronicle and changes from the tower discovery"><span class="crop-note">“The tower watched the river…”</span></div>
+          <div class="meta"><strong>07 · The chronicle leaves a question</strong><span>00:58–01:09</span></div>
+          <p class="note"><b>First:</b> the shared chronicle line resolves. <b>Seam:</b> quiet crossfade from the question into the beliefs.</p><span class="chip">Held read → dissolve</span>
+        </article>
+        <article class="card" id="frame-08">
+          <div class="art plain"><div class="beliefs"><div><small>Belief · held</small><h3>The tower's light is a promise.</h3><p>Beliefs screen: the agents carry different readings forward.</p></div><div class="mystery"><small>Question · open</small><h3>Who first lit the tower?</h3><p>The first keeper and first warning remain unknown.</p></div></div><span class="callout small" style="left:5%;right:auto;top:5%;bottom:auto;padding:1.3cqw 1.8cqw"><strong style="font-size:2cqw">Belief held.<br>Mystery kept.</strong></span></div>
+          <div class="meta"><strong>08 · What the world carries</strong><span>01:09–01:21</span></div>
+          <p class="note"><b>First:</b> held belief, then open question. <b>Seam:</b> carry the tower shape into the evening ritual.</p><span class="chip">Image match</span>
+        </article>
+        <article class="card" id="frame-09">
+          <div class="art plain"><div class="culture"><div class="copy"><div class="eyebrow">History → culture</div><h3>A watch kept<br>at dusk.</h3><p>History returns to the tower. The culture page shows the adopted Evening Watch.</p></div><div class="ritual"><b>Adopted ritual</b><h4>The evening watch</h4><p>When clouds gather upriver, a watchkeeper climbs the tower at dusk and reports the waterline.</p></div></div><div class="endcard" style="inset:74% 0 0"><div><div class="mark"><img src="capture-home-final/assets/svgs/logo-24eb1a94.svg" alt=""> Mythborn</div><p>Start a civilization ↗</p></div></div></div>
+          <div class="meta"><strong>09 · Your world keeps growing</strong><span>01:21–01:30</span></div>
+          <p class="note"><b>First:</b> adopted ritual lands, then the real mark. <b>Seam:</b> clear to a still end card.</p><span class="chip">Logo resolve</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="closing">
+      <div class="closing-card">
+        <h2>Seam map · left to right</h2>
+        <div class="seamline"><span>01 Atlas</span><i>↘</i><span>02 Found</span><i>→</i><span>03 World</span><i>→</i><span>04 Photo</span><i>→</i><span>05 Readings</span><i>→</i><span>06 Replies</span><i>→</i><span>07 Record</span><i>→</i><span>08 Belief</span><i>→</i><span>09 Ritual / mark</span></div>
+      </div>
+      <div class="closing-card">
+        <h2>Captured design tokens</h2>
+        <div class="tokens">
+          <span class="swatch"><i style="--sw:#f3f0e9"></i>Paper</span><span class="swatch"><i style="--sw:#202932"></i>Ink</span><span class="swatch"><i style="--sw:#152330"></i>Night</span><span class="swatch"><i style="--sw:#ad3f2c"></i>Copper</span><span class="swatch"><i style="--sw:#e6bc7a"></i>Warm light</span>
+          <div class="type-sample"><b>Almendra</b> display · <span style="font-family:Uncial,serif">Uncial Antiqua</span> headings · DM Sans interface</div>
+        </div>
+      </div>
+    </section>
+    <footer class="foot"><span>MYTHBORN · STORYBOARD V1</span><span>Captured interface; local fictional demo data</span></footer>
+  </main>
+</body>
+</html>
