@@ -1,6 +1,59 @@
 # Hosted release setup
 
-`render.yaml` defines the Go API, one Go worker, a private Temporal server,
+## Free deployment without a payment method
+
+`render.yaml` now describes one free `mythborn-backend` web service. Its Docker
+image runs the API, worker, and real Temporal 1.32.0 server together. Only the API
+binds to the public HTTP port. Temporal listens on loopback and stores execution
+and visibility history in two isolated Tiger schemas: `mythborn_temporal` and
+`mythborn_temporal_visibility`. Supabase continues to own Auth and private images;
+game tables remain in Tiger's original application schema. No additional Render
+database, private service, worker plan, or persistent disk is needed.
+
+This is a hobby/demo deployment, with Render's normal free-plan limits. It sleeps
+after 15 minutes without inbound traffic; the next request has a cold start.
+Rounds and council timers pause while the container is asleep and resume after
+waking. Workflow history survives because it is stored in Tiger rather than in
+the ephemeral container filesystem. All three processes share 512 MB; the wrapper
+sets Go memory targets and restarts the container if an essential process exits.
+Normal monthly build, bandwidth, outbound traffic, and instance-hour limits apply.
+Do not use external keep-alive pings to pretend this is an always-on service.
+
+The image is built from `deploy/free/Dockerfile`; the standard backend Dockerfile
+and local Compose setup are unchanged. Initialize the two Temporal schemas once
+from a trusted machine before deployment (the free plan cannot run pre-deploy
+jobs). Load the existing `.env` without printing credentials:
+
+```bash
+set -a
+. ./.env
+set +a
+docker build -f deploy/free/Dockerfile -t mythborn-free .
+python3 deploy/free/database-env.py /tmp/mythborn-temporal.env
+docker run --rm --env-file /tmp/mythborn-temporal.env \
+  --entrypoint /etc/mythborn/setup.sh mythborn-free
+```
+
+Set the usual server-only application values and the SQL values from that private
+env file on the Render service. Set `HTTP_ADDRESS=:10000`, `SQL_TLS=true`, and the
+exact Vercel domains in `CORS_ALLOWED_ORIGINS`. Never commit the generated env
+file or copy database/model/service-role credentials to Vercel. Set Vercel's
+public `VITE_API_BASE_URL` to the resulting Render HTTPS URL and redeploy the
+frontend. If Render's Blueprint flow requires a payment method, create the web
+service directly with plan **Free**, Dockerfile `deploy/free/Dockerfile`, and
+health-check path `/readyz`.
+
+Before the hosted service starts, stop the local worker (`docker compose stop
+worker`) so workers attached to different Temporal servers cannot claim the same
+Tiger outbox. Preserve the local Temporal volume: existing execution checkpoints
+are not imported into the new schemas. Completed game history stays available.
+A local round already marked `needs_attention` can be retried on hosted Temporal;
+its unsaved debate phases must be regenerated. New commands use Signal-With-Start
+to create hosted coordinators for existing games.
+
+## Optional paid deployment
+
+`render.paid.yaml` defines the Go API, one Go worker, a private Temporal server,
 and a small PostgreSQL instance dedicated to Temporal. The frontend is deployed
 separately from `web/` on Vercel. The worker needs one always-on instance because
 it dispatches the Tiger outbox and polls Temporal. The Blueprint deliberately
@@ -74,7 +127,7 @@ volume when restarting so its workflow history survives.
    psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f seeds/founding_agents.sql
    ```
 
-2. Deploy `mythborn-temporal-db` and `mythborn-temporal`. The Blueprint supplies
+2. Deploy `mythborn-temporal-db` and `mythborn-temporal` using `render.paid.yaml`. The Blueprint supplies
    the database credentials to Temporal and supplies its private `hostport` to
    the API and worker automatically. Use namespace `default` and an empty
    `TEMPORAL_API_KEY` on this private network. The database's public IP allowlist

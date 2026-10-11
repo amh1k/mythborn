@@ -32,6 +32,8 @@ jobs:
         run: docker build --tag mythborn-backend:ci .
       - name: Build production Temporal image
         run: docker build --file deploy/temporal/Dockerfile --tag mythborn-temporal:ci .
+      - name: Build free bundled backend image
+        run: docker build --file deploy/free/Dockerfile --tag mythborn-free:ci .
   frontend:
     runs-on: ubuntu-latest
     defaults:

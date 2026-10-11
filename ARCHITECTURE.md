@@ -13,18 +13,18 @@ flowchart LR
     P[Player on phone or laptop] --> W[React app<br/>Vercel]
     W -->|Sign in| A[Supabase Auth]
     W -->|JWT + game requests| H[Go API<br/>Render Web Service]
-    H -->|Records and outbox| D[(Tiger Cloud PostgreSQL)]
+    H -->|Records and outbox| D[(Tiger Cloud PostgreSQL<br/>Application schema)]
     H -->|Private photo writes/read links| S[(Supabase Storage)]
-    K -->|Dispatch outbox; start/signal workflows| T[Temporal server<br/>Render Private Service]
-    T -->|Workflow and visibility history| TD[(Render Postgres<br/>Temporal only)]
-    T -->|Tasks| K[Go worker<br/>Render Background Worker]
+    K -->|Dispatch outbox; start/signal workflows| T[Temporal server<br/>Loopback in bundled Render service]
+    T -->|Workflow and visibility history| TD[(Tiger Cloud PostgreSQL<br/>Isolated Temporal schemas)]
+    T -->|Tasks| K[Go worker<br/>Bundled Render service]
     K -->|State, memory, progress| D
     K -->|Photo read| S
     K -->|Gemma 4 + embeddings| G[Google Gemini API]
     W -->|Poll episode and read history| H
 ```
 
-Vercel runs the user-facing frontend. Render runs the Go API, the Go worker, and a private production Temporal server. Temporal stores durable execution state in a separate Render PostgreSQL instance. Google hosts **model inference**, not the Mythborn backend. Tiger Data is the canonical game database; Supabase Storage holds photo objects, while Supabase Auth owns passwords and identity-provider sessions. Supabase's internal Postgres is used for its own Auth/Storage metadata, not Mythborn game tables.
+Vercel runs the user-facing frontend. The no-card Render deployment runs the Go API, Go worker, and real Temporal server together in one free Docker web service. Only the API is public. Temporal uses two isolated schemas in the existing Tiger database for durable execution state. The service sleeps after inactivity, pausing background execution until it wakes. `render.paid.yaml` retains the alternative with separate always-on services and a dedicated workflow database. Google hosts **model inference**, not the Mythborn backend. Tiger Data is the canonical game database; Supabase Storage holds photo objects, while Supabase Auth owns passwords and identity-provider sessions. Supabase's internal Postgres is used for its own Auth/Storage metadata, not Mythborn game tables.
 
 ## 2. Service responsibilities and boundaries
 
@@ -33,7 +33,7 @@ Vercel runs the user-facing frontend. Render runs the Go API, the Go worker, and
 | React app | Screens, role previews, camera/file picker, auth session, polling and display | Game rules, ownership decisions, secrets, direct model calls |
 | Go API | JWT verification, owner/role checks, upload and photo access, reads, commands, idempotency, HTTP errors | Long-running model work or agent state in process memory |
 | Go Temporal worker | Coordinator and agent workflows, model/storage/database activities, outbox dispatch, retries | Public HTTP requests or the canonical game ledger |
-| Private Temporal server and workflow Postgres | Durable execution history, signals, timers, task queues | User-visible chronicles or original photos |
+| Loopback Temporal server and isolated SQL schemas | Durable execution history, signals, timers, task queues | User-visible chronicles or original photos |
 | Tiger Data | Accounts/permissions, templates, games, round progress, conversation summaries, beliefs/revisions, traditions/revisions, chronicles, search index, outbox | Passwords, image bytes, permanent raw debates or chat transcripts |
 | Supabase Auth/Storage | Identity sessions and private photo objects | Game state and agent memory |
 | Gemini API | Hosted Gemma 4 image/text inference and text embeddings | Durable Mythborn world state |
@@ -187,7 +187,7 @@ Temporal handles **execution durability**; Tiger Data handles **readable product
 
 ## 9. Deployment, configuration, and operations
 
-Vercel deploys the React frontend. Render deploys a paid Go API web service, a paid Go background worker, a private production Temporal server, and its dedicated PostgreSQL persistence. The Go API binds to Render's `PORT`; API and worker connect to Temporal over Render's private network in Singapore. The worker also needs outbound connections to Tiger Data, Supabase, and Google but no public port. Use one Temporal namespace and task queue for version 1. Local development continues to use the SQLite development server; its execution history is separate from hosted Temporal. Goose game migrations run once before API/worker rollout, not independently from both processes. Temporal schema migrations run in the private server's pre-deploy command. See [DEPLOYMENT.md](./DEPLOYMENT.md) for plans and cutover. [Render service types](https://render.com/docs/service-types).
+Vercel deploys the React frontend. The no-card option on Render is one free Docker web service in Singapore, containing API, worker, and Temporal. The Go API binds to port 10000; API and worker connect to Temporal on loopback. The worker needs outbound connections to Tiger Data, Supabase, and Google but no public port. Use one Temporal namespace and task queue for version 1. Local development continues to use the SQLite development server; its execution history is separate from hosted Temporal. Goose game migrations and initial hosted Temporal schema setup run once from a trusted machine before rollout. The optional paid Blueprint uses a private Temporal service with a pre-deploy schema command. See [DEPLOYMENT.md](./DEPLOYMENT.md) for free-plan limitations, paid plans, and cutover. [Render service types](https://render.com/docs/service-types).
 
 | Configuration | Browser | API | Worker |
 | --- | --- | --- | --- |

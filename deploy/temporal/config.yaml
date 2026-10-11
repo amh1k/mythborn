@@ -5,27 +5,37 @@ log:
 persistence:
   defaultStore: default
   visibilityStore: visibility
-  numHistoryShards: 128
+  numHistoryShards: {{ env "TEMPORAL_HISTORY_SHARDS" | default "128" }}
   datastores:
     default:
       sql:
         pluginName: postgres12
-        databaseName: temporal
+        databaseName: {{ env "SQL_DATABASE" | default "temporal" | quote }}
         connectAddr: '{{ env "SQL_HOST" }}:{{ env "SQL_PORT" | default "5432" }}'
         connectProtocol: tcp
         user: {{ env "SQL_USER" | quote }}
         password: {{ env "SQL_PASSWORD" | quote }}
+        connectAttributes:
+          search_path: {{ env "SQL_HISTORY_SCHEMA" | default "public" | quote }}
+        tls:
+          enabled: {{ env "SQL_TLS" | default "false" }}
+          serverName: {{ env "SQL_HOST" | quote }}
         maxConns: 5
         maxIdleConns: 2
         maxConnLifetime: 1h
     visibility:
       sql:
         pluginName: postgres12
-        databaseName: temporal_visibility
+        databaseName: {{ env "SQL_VISIBILITY_DATABASE" | default "temporal_visibility" | quote }}
         connectAddr: '{{ env "SQL_HOST" }}:{{ env "SQL_PORT" | default "5432" }}'
         connectProtocol: tcp
         user: {{ env "SQL_USER" | quote }}
         password: {{ env "SQL_PASSWORD" | quote }}
+        connectAttributes:
+          search_path: {{ env "SQL_VISIBILITY_SCHEMA" | default "public" | quote }}
+        tls:
+          enabled: {{ env "SQL_TLS" | default "false" }}
+          serverName: {{ env "SQL_HOST" | quote }}
         maxConns: 3
         maxIdleConns: 1
         maxConnLifetime: 1h
@@ -40,22 +50,22 @@ services:
     rpc:
       grpcPort: 7233
       membershipPort: 6933
-      bindOnIP: 0.0.0.0
+      bindOnIP: {{ env "TEMPORAL_BIND_IP" | default "0.0.0.0" }}
   history:
     rpc:
       grpcPort: 7234
       membershipPort: 6934
-      bindOnIP: 0.0.0.0
+      bindOnIP: {{ env "TEMPORAL_BIND_IP" | default "0.0.0.0" }}
   matching:
     rpc:
       grpcPort: 7235
       membershipPort: 6935
-      bindOnIP: 0.0.0.0
+      bindOnIP: {{ env "TEMPORAL_BIND_IP" | default "0.0.0.0" }}
   worker:
     rpc:
       grpcPort: 7239
       membershipPort: 6939
-      bindOnIP: 0.0.0.0
+      bindOnIP: {{ env "TEMPORAL_BIND_IP" | default "0.0.0.0" }}
 clusterMetadata:
   enableGlobalNamespace: false
   failoverVersionIncrement: 10

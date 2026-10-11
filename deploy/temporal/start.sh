@@ -3,7 +3,7 @@ set -eu
 : "${SQL_HOST:?SQL_HOST is required}"
 : "${SQL_USER:?SQL_USER is required}"
 : "${SQL_PASSWORD:?SQL_PASSWORD is required}"
-export TEMPORAL_BROADCAST_ADDRESS="$(getent hosts "$(hostname)" | awk 'NR==1 {print $1}')"
+export TEMPORAL_BROADCAST_ADDRESS="${TEMPORAL_BROADCAST_ADDRESS:-$(getent hosts "$(hostname)" | awk 'NR==1 {print $1}')}"
 : "${TEMPORAL_BROADCAST_ADDRESS:?Cannot resolve the container address}"
 
 # Create the namespace after the real server becomes healthy. The foreground
