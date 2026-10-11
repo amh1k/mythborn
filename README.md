@@ -1,112 +1,109 @@
-# Mythborn
+<p align="center">
+  <img src="web/public/brand/mythborn-mark.svg" alt="Mythborn mark" width="88" />
+</p>
 
-Mythborn is a React and Go app where a small cast of characters interprets
-outdoor photos, debates their meaning, and records the civilization's history.
-The cast is a Priest, Scientist, Soldier, and Historian. Each character has
-their own beliefs, and the Historian writes a chronicle after the other three
-have responded to the same evidence.
+<h1 align="center">Mythborn</h1>
+
+<p align="center"><strong>Go outside. Bring back a story.</strong><br />A photo becomes a discovery. Four agents argue over its meaning. A civilization remembers.</p>
+
+<p align="center">
+  <a href="https://github.com/amh1k/mythborn"><img alt="Built with Go" src="https://img.shields.io/badge/Go-1.26-00ADD8?logo=go&logoColor=white" /></a>
+  <a href="https://react.dev/"><img alt="React 19" src="https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white" /></a>
+  <a href="https://docs.temporal.io/develop/go"><img alt="Temporal workflows" src="https://img.shields.io/badge/Workflows-Temporal-5B5BF7" /></a>
+  <a href="https://www.postgresql.org/"><img alt="PostgreSQL" src="https://img.shields.io/badge/Data-PostgreSQL-4169E1?logo=postgresql&logoColor=white" /></a>
+  <a href="https://supabase.com/"><img alt="Supabase Auth and Storage" src="https://img.shields.io/badge/Auth%20%26%20Photos-Supabase-3FCF8E?logo=supabase&logoColor=white" /></a>
+</p>
+
+<p align="center">
+  <a href="docs/assets/mythborn-showcase.mp4"><img src="docs/assets/mythborn-preview.gif" alt="Watch the Mythborn product walkthrough: capture a discovery, follow the agents' debate, and see the Historian's chronicle." width="720" /></a>
+</p>
+<p align="center"><sub>12-second preview · Click to watch the full 90-second walkthrough</sub></p>
+
+## A living history, shaped by what you find
+
+Mythborn is a photo-driven civilization simulator. Take a walk, notice something worth remembering, and bring back a photo. The Priest, Scientist, Soldier, and Historian each interpret the evidence through their own point of view, then challenge one another before the Historian records the round.
+
+Your role changes how the world understands you. Play as an **Observer**, a **God**, or a **Messenger**. Over time, discoveries can change individual beliefs, open new mysteries, and shape shared culture. You can watch each round unfold, then return later to see what your civilization remembers.
+
+## See the world take shape
+
+<table>
+  <tr>
+    <td width="50%"><img src="videos/mythborn-showcase/capture-polish/03-world.png" alt="The civilization page, where discoveries and agents come together" /></td>
+    <td width="50%"><img src="videos/mythborn-showcase/capture-polish/05-agent-debate.png" alt="The four agents' interpretations and rebuttals during a discovery round" /></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>A world with its own point of view</strong><br />Explore the agents, their beliefs, culture, and unresolved mysteries.</td>
+    <td align="center"><strong>See the debate as it happens</strong><br />Follow first reactions and rebuttals before the chronicle is written.</td>
+  </tr>
+  <tr>
+    <td colspan="2"><img src="videos/mythborn-showcase/capture-polish/04-chronicle.png" alt="The Historian's chronicle records what the agents agreed on and what remains unresolved" /></td>
+  </tr>
+  <tr><td colspan="2" align="center"><strong>A record that holds both certainty and doubt</strong><br />The Historian preserves the shared facts, changing beliefs, and questions the agents could not settle.</td></tr>
+</table>
+
+## How a discovery becomes history
+
+1. **Notice something outdoors.** Take a photo or upload one. A location check is never required.
+2. **Choose your voice.** Submit as an Observer, God, or Messenger; your role is fixed for that civilization.
+3. **Watch the council respond.** The four agents form interpretations, exchange rebuttals, and decide what they can agree on.
+4. **Return to a changed world.** The Historian saves a chronicle, and the agents' beliefs, mysteries, and culture carry the consequences forward.
+
+The agents use **Gemma 4** for their grounded interpretations and debate. **Temporal** coordinates each round durably, so a worker restart or a model rate limit does not erase completed work. The interface shows progress while the agents think and keeps the saved chronicle available afterward.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    Player[Player] --> Web[React + Vite]
+    Web -->|sign-in| Auth[Supabase Auth]
+    Web -->|photos| Storage[Private Supabase Storage]
+    Web --> API[Go API]
+    API --> AppDB[(Tiger Data\nPostgreSQL + pgvector)]
+    API --> Temporal[Temporal]
+    Temporal --> Worker[Go worker]
+    Worker --> AppDB
+    Worker --> Gemma[Gemma 4\nGemini API]
+```
+
+Tiger Data stores accounts, civilizations, discoveries, chronicles, and vector-backed memories. Temporal stores workflow progress in its own database schemas. Supabase handles authentication and private photo storage; the Go API and worker keep privileged credentials on the server.
+
+## Tech stack
+
+| Area | Technology |
+|---|---|
+| Web app | React 19, TypeScript, Vite |
+| API and background worker | Go 1.26 |
+| Model | Gemma 4 through the Gemini API; Gemini embeddings for memory retrieval |
+| Durable workflows | Temporal Go SDK |
+| Application database | Tiger Data, PostgreSQL, pgvector |
+| Authentication and photo storage | Supabase Auth and private Storage |
 
 ## Run locally
 
-To run just the API with Docker and your configured root `.env`, use `make api`.
-Use `make backend` to start the API and worker against an existing Temporal
-server. Neither command starts Temporal or the frontend. See
-[LOCAL_DEVELOPMENT.md](./LOCAL_DEVELOPMENT.md) for configuration and stop commands.
+The full setup guide covers environment variables, migrations, Temporal, admin setup, and recovery:
+[Local development guide](./LOCAL_DEVELOPMENT.md).
 
-For the complete local stack below, you need Go 1.26+, Node.js with npm, Python 3, a PostgreSQL database on Tiger
-Cloud, a Supabase project with Auth and a private photo bucket, a Gemini API
-key, and the Temporal CLI. Local development uses Temporal's free development
-server; it does not need a Temporal Cloud account. See
-[LOCAL_DEVELOPMENT.md](./LOCAL_DEVELOPMENT.md) for the full service and recovery
-guide.
+Once configured, start the local stack with:
 
-1. Copy `.env.example` to `.env` and set `DATABASE_URL`, `SUPABASE_URL`,
-   `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_PHOTO_BUCKET`, and `GEMINI_API_KEY`.
-   Set Temporal to `TEMPORAL_ADDRESS=localhost:7233`,
-   `TEMPORAL_NAMESPACE=default`, and an empty `TEMPORAL_API_KEY`.
-2. Create `web/.env.local` with the browser settings for your own project:
+```bash
+python3 scripts/local-dev.py start
+```
 
-   ```dotenv
-   VITE_API_BASE_URL=http://localhost:8080
-   VITE_SUPABASE_URL=https://your-project.supabase.co
-   VITE_SUPABASE_PUBLISHABLE_KEY=your-public-publishable-key
-   ```
+Open <http://localhost:5173>. Check services with `python3 scripts/local-dev.py status` and stop them with `python3 scripts/local-dev.py stop`. The local stack uses Temporal's development server and keeps workflow history in `bin/local-dev/`.
 
-   Keep service role keys and the Gemini key in the root `.env`; browser
-   settings must contain only the public Supabase key.
-3. Install the Temporal CLI into `bin/temporal` using the steps in [LOCAL_DEVELOPMENT.md](./LOCAL_DEVELOPMENT.md). Then install the frontend dependency lock and build the Go services:
-
-   ```bash
-   go install github.com/pressly/goose/v3/cmd/goose@v3.28.0
-   export PATH="$(go env GOPATH)/bin:$PATH"
-   set -a
-   . ./.env
-   set +a
-   goose -dir migrations postgres "$DATABASE_URL" up
-   psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f seeds/founding_agents.sql
-   cd web && npm ci && cd ..
-   go build -o bin/mythborn-api ./cmd/api
-   go build -o bin/mythborn-worker ./cmd/worker
-   ```
-
-   Encode special characters in the Tiger password as URL percent escapes
-   inside `DATABASE_URL`. Since this setup sources `.env`, quote values that
-   contain shell metacharacters. Apply migrations only to the intended database.
-   After signing in once and obtaining the account UUID from Supabase Auth,
-   bootstrap the first admin in Tiger Cloud SQL Editor or with `psql`:
-
-   ```sql
-   INSERT INTO accounts (id, system_role)
-   VALUES ('YOUR_SUPABASE_AUTH_USER_UUID', 'admin')
-   ON CONFLICT (id) DO UPDATE SET system_role = 'admin';
-   ```
-
-   Run this once for an account you control. The UUID is the Auth user's `id`,
-   not their email. Account UUIDs and game data are stored in Tiger Cloud.
-4. Start the app, API, worker, and local Temporal server:
-
-   ```bash
-   python3 scripts/local-dev.py start
-   ```
-
-   Open <http://localhost:5173>. Run `python3 scripts/local-dev.py status` to
-   check services and `python3 scripts/local-dev.py stop` to stop the managed
-   local processes. After backend code changes, rebuild the binaries and run
-   `python3 scripts/local-dev.py restart-backend`; this keeps Temporal's stored
-   workflow history and timers running.
-
-The local helper stores logs and Temporal's persistent database in
-`bin/local-dev/`. Keep that directory when restarting if you want to resume
-existing workflow history.
-
-## Rate limits and episode progress
-
-When Gemini returns HTTP 429, Temporal waits at least one minute, or longer if
-the provider requests it, then retries the affected call automatically. The
-episode shows the retry countdown. Responses already received stay visible and
-are reused, and the Historian waits for all four agents before writing the
-chronicle. Automatic recovery pauses after eight attempts or 45 minutes; retry
-the saved stage later, or set the round aside. Deletion and end-game commands can
-interrupt an active quota wait. Restarting the worker does not discard a
-scheduled retry.
-
-## Current acceptance checks
-
-`go test ./...` runs deterministic model, workflow, HTTP, and image checks.
-The repository integration test also verifies migrations, belief revision
-attribution, abandoned-round protection, and closing-round retry when run against
-a disposable PostgreSQL database with pgvector migrations applied. A browser
-check uses mock service data. The real Supabase/Tiger/Gemini discovery and second
-photo memory-retrieval run is still outstanding.
+To run only the API, use `make api`. To run the API and worker against an already-running Temporal server, use `make backend`.
 
 ## Project guides
 
-- [Hosted deployment](./DEPLOYMENT.md)
-- [Local development and Temporal](./LOCAL_DEVELOPMENT.md)
-- [Functional specification](./FUNCTIONAL_SPEC.md)
 - [Architecture and reliability](./ARCHITECTURE.md)
 - [Database design](./DATABASE_DESIGN.md)
-- [Technology choices](./TECHNOLOGIES.md)
-- [Implementation plan and current status](./IMPLEMENTATION_PLAN.md)
+- [Functional specification](./FUNCTIONAL_SPEC.md)
+- [Local development and recovery](./LOCAL_DEVELOPMENT.md)
+- [Hosted deployment](./DEPLOYMENT.md)
 - [API contract](./api/openapi.yaml)
-- [Founding agent templates and seed instructions](./seeds/README.md)
+- [Founding agent templates](./seeds/README.md)
+
+## Project status
+
+Mythborn is under active development. The interface and local stack are available for exploration; connecting a hosted API requires a separately deployed backend and Temporal worker. See the [deployment guide](./DEPLOYMENT.md) for the current options and their tradeoffs.
