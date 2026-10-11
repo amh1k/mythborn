@@ -49,6 +49,12 @@ frontend. If Render's Blueprint flow requires a payment method, create the web
 service directly with plan **Free**, Dockerfile `deploy/free/Dockerfile`, and
 health-check path `/readyz`.
 
+Render can reject service creation through MCP with HTTP 402 and "Payment
+information is required" even when the request explicitly selects `free`.
+That response does not create a service. Do not switch to a paid plan to work
+around it. Try the dashboard's direct Free web-service flow or ask Render support
+to resolve the account restriction; stop if that flow also requires a card.
+
 Before the hosted service starts, stop the local worker (`docker compose stop
 worker`) so workers attached to different Temporal servers cannot claim the same
 Tiger outbox. Preserve the local Temporal volume: existing execution checkpoints
