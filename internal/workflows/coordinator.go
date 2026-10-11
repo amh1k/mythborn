@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/amh1k/mythborn/internal/domain"
@@ -348,10 +349,21 @@ func processRound(ctx tw.Context, command workflow.Command, progressByRound map[
 			votes = append(votes, rebuttal.TraditionSupport...)
 		}
 		agentIDs := make([]domain.ID, len(current.Agents))
+		agentNames := make(map[domain.ID]string, len(current.Agents))
 		for i, agent := range current.Agents {
 			agentIDs[i] = agent.Agent.ID
+			name := strings.TrimSpace(agent.Agent.DisplayName)
+			if name == "" {
+				typeName := strings.TrimSpace(string(agent.Agent.Type))
+				if typeName == "" {
+					name = "Agent"
+				} else {
+					name = "The " + strings.ToUpper(typeName[:1]) + typeName[1:]
+				}
+			}
+			agentNames[agent.Agent.ID] = name
 		}
-		progress.TraditionChanges, err = ComputeTraditionChanges(command.GameID, command.RoundID, current.Traditions, progress.Candidates, votes, agentIDs)
+		progress.TraditionChanges, err = ComputeTraditionChanges(command.GameID, command.RoundID, current.Traditions, progress.Candidates, votes, agentIDs, agentNames)
 		if err != nil {
 			return err
 		}

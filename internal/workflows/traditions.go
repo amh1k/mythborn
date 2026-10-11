@@ -13,7 +13,7 @@ import (
 
 // ComputeTraditionChanges applies the separate deterministic three-of-four
 // rule. Every candidate must have one explicit declaration from each agent.
-func ComputeTraditionChanges(gameID, roundID domain.ID, current []workflow.TraditionContext, candidates []workflow.TraditionIdea, votes []workflow.TraditionSupport, agentIDs []domain.ID) ([]workflow.TraditionChange, error) {
+func ComputeTraditionChanges(gameID, roundID domain.ID, current []workflow.TraditionContext, candidates []workflow.TraditionIdea, votes []workflow.TraditionSupport, agentIDs []domain.ID, agentNames map[domain.ID]string) ([]workflow.TraditionChange, error) {
 	if len(agentIDs) != 4 {
 		return nil, fmt.Errorf("tradition vote requires exactly four agents")
 	}
@@ -91,7 +91,11 @@ func ComputeTraditionChanges(gameID, roundID domain.ID, current []workflow.Tradi
 				supporters = append(supporters, agentID)
 			}
 			if strings.TrimSpace(vote.Reason) != "" {
-				reasons = append(reasons, string(agentID)+": "+strings.TrimSpace(vote.Reason))
+				name := strings.TrimSpace(agentNames[agentID])
+				if name == "" {
+					name = "An agent"
+				}
+				reasons = append(reasons, name+": "+strings.TrimSpace(vote.Reason))
 			}
 		}
 		var state domain.TraditionState

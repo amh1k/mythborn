@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useAuth } from '../auth'
-import { api } from '../lib/api'
+import { api, asArray } from '../lib/api'
 import { usePolling } from '../lib/use-polling'
 import { debateStage, isFinished, isPaused, roundLabel, stageDescription, stageLabel } from '../lib/episode-progress'
 import { LiveDebate } from '../components/live-debate'
@@ -9,12 +9,25 @@ import { RoundProgress } from '../components/round-progress'
 import { Badge, Empty, ErrorNotice, Loading } from '../components/ui'
 import type { DebateProgress, Episode } from '../types'
 const formatDate = (value?: string) => value ? new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Undated'
+const formatChangeReason = (reason: string, agentNames: Record<string, string>) => reason.replace(/\b([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})(?=:)/gi, id => agentNames[id.toLowerCase()] ?? 'An agent')
 
 export function EpisodePage() {
   const [debateProgress, setDebateProgress] = useState<DebateProgress>()
+  const [agentNames, setAgentNames] = useState<Record<string, string>>({})
   const { episodeId = '' } = useParams(); const token = useAuth().session?.access_token ?? ''; const [episode, setEpisode] = useState<Episode | null>(null); const [loading, setLoading] = useState(true); const [error, setError] = useState<unknown>(null); const [busy, setBusy] = useState(false); const [correction, setCorrection] = useState(''); const [photo, setPhoto] = useState(''); const [commandId, setCommandId] = useState(''); const [pollVersion, setPollVersion] = useState(0)
   const reload = () => api.episode(token, episodeId).then(next => { setEpisode(next); return next })
   useEffect(() => { setEpisode(null); setLoading(true); setPhoto(''); setCommandId(''); setDebateProgress(undefined) }, [episodeId])
+  useEffect(() => {
+    if (!episode?.game_id) return
+    let alive = true
+    setAgentNames({})
+    void api.agents(token, episode.game_id).then(result => {
+      if (!alive) return
+      const names = Object.fromEntries(asArray(result, 'agents').map(agent => [agent.id.toLowerCase(), agent.display_name || `The ${agent.agent_type}`]))
+      setAgentNames(names)
+    }).catch(() => { if (alive) setAgentNames({}) })
+    return () => { alive = false }
+  }, [episode?.game_id, token])
   usePolling(`${episodeId}/${token}/${pollVersion}`, async signal => {
     try {
       const next = await api.episode(token, episodeId, signal)
@@ -73,7 +86,7 @@ export function EpisodePage() {
     {!isFinished(episode) && episode.kind !== 'closing' && <div className="round-control"><button className="button button-quiet" disabled={busy || Boolean(commandId)} onClick={() => void abandon()}>{busy ? 'Working…' : 'Set this round aside'}</button><span className="text-small text-muted">Stops this round without saving beliefs or traditions.</span></div>}
     <LiveDebate key={episode.id} episode={episode} token={token} onProgress={setDebateProgress} />
     {episode.chronicle && <ChronicleDetail chronicle={episode.chronicle} />}
-    {done && <section className="saved-changes"><h2>What changed</h2>{episode.changes?.some(change => change.kind !== 'culture_influence') ? episode.changes.filter(change => change.kind !== 'culture_influence').map(change => <article key={change.id} className="saved-change"><p className="eyebrow">{change.kind} · {change.name}</p>{change.before && <p className="text-muted">Before ({change.before_state}): {change.before}</p>}<p>After ({change.after_state}): {change.after}</p><p className="text-small text-muted">{change.reason}</p></article>) : <p className="text-muted">No lasting changes or culture influences were recorded in this round.</p>}</section>}
+    {done && <section className="saved-changes"><h2>What changed</h2>{episode.changes?.some(change => change.kind !== 'culture_influence') ? episode.changes.filter(change => change.kind !== 'culture_influence').map(change => <article key={change.id} className="saved-change"><p className="eyebrow">{change.kind} · {change.name}</p>{change.before && <p className="text-muted">Before ({change.before_state}): {change.before}</p>}<p>After ({change.after_state}): {change.after}</p><p className="text-small text-muted">{formatChangeReason(change.reason, agentNames)}</p></article>) : <p className="text-muted">No lasting changes or culture influences were recorded in this round.</p>}</section>}
     {done && Boolean(episode.changes?.some(change => change.kind === 'culture_influence')) && <section className="saved-changes"><h2>Culture carried into this discovery</h2>{episode.changes?.filter(change => change.kind === 'culture_influence').map(change => <article className="saved-change" key={change.id}><p className="eyebrow">{change.after_state} · {change.name}</p><p>{change.after}</p><p className="text-small text-muted">{change.reason}</p></article>)}</section>}
     {episode.status === 'abandoned'  && <Empty>This photo was set aside. No beliefs or traditions changed.</Empty>}
     </main><aside className="episode-aside"><div className="surface-card aside-card"><p className="eyebrow">One story, four voices</p><h3>What happens next</h3><p className="text-muted">Each agent reacts to the same shared evidence, then they respond to one another. Their debate is temporary. Your historian saves the verdict and meaningful dissent.</p><div className="aside-rule" /><p className="text-small text-muted">A split or unresolved disagreement still completes the discovery.</p></div></aside></div></>
