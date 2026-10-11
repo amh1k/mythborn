@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="docs/assets/mythborn-showcase.mp4"><img src="docs/assets/mythborn-preview.gif" alt="Watch the Mythborn product walkthrough: capture a discovery, follow the agents' debate, and see the Historian's chronicle." width="720" /></a>
+  <a href="docs/assets/mythborn-showcase.mp4"><img src="docs/assets/mythborn-preview-smooth.gif" alt="Watch the Mythborn product walkthrough: capture a discovery, follow the agents' debate, and see the Historian's chronicle." width="640" /></a>
 </p>
 <p align="center"><sub>12-second preview · Click to watch the full 90-second walkthrough</sub></p>
 
