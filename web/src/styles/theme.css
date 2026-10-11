@@ -220,13 +220,13 @@ h5,
 h6 {
   margin: 0 0 var(--space-4);
   color: var(--text-primary);
-  font-family: var(--font-body);
+  font-family: var(--font-display);
   font-weight: 700;
   line-height: var(--line-heading);
   text-wrap: balance;
 }
 
-h1 { font-family: var(--font-body); font-size: var(--text-3xl); font-weight: 400; letter-spacing: .01em; }
+h1 { font-family: var(--font-title); font-size: var(--text-3xl); font-weight: 400; letter-spacing: .01em; }
 h2 { font-size: var(--text-2xl); }
 h3 { font-size: var(--text-xl); }
 h4 { font-size: var(--text-lg); }

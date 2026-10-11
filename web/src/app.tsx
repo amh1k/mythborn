@@ -6,6 +6,8 @@ import { supabase } from './lib/supabase'
 import { Sigil } from './components/sigil'
 import { BrandMark } from './components/brand-mark'
 import { ThemeToggle } from './theme'
+import { AtlasHero } from './components/atlas-hero'
+import { worldArtwork } from './lib/world-art'
 import { Badge, Empty, ErrorNotice, Loading } from './components/ui'
 import { usePolling } from './lib/use-polling'
 import { isFinished, isPaused, roundLabel, stageLabel } from './lib/episode-progress'
@@ -101,7 +103,7 @@ function WorldList() {
   const token = useToken(); const [games, setGames] = useState<Game[]>([]); const [loading, setLoading] = useState(true); const [error, setError] = useState<unknown>(null)
   useEffect(() => { let alive = true; void api.worlds(token).then(v => { if (alive) setGames(asArray(v, 'worlds')) }).catch(e => alive && setError(e)).finally(() => alive && setLoading(false)); return () => { alive = false } }, [token])
   const active = games.filter(g => !['archived', 'deleting'].includes(g.status)); const archives = games.filter(g => g.status === 'archived')
-  return <><div className="page-heading"><div><p className="eyebrow">Your field journals</p><h1>Civilizations</h1></div><Link className="button" to="/worlds/new">New civilization</Link></div>
+  return <><AtlasHero />
     {error !== null && <ErrorNotice error={error} />}{loading ? <Loading label="Gathering your worlds…" /> : !error && games.length === 0 ? <section className="welcome-card"><div className="welcome-illustration"><Sigil /></div><div><p className="eyebrow">No civilizations yet</p><h2>The first chapter is unwritten.</h2><p className="text-muted">Name a civilization and choose your role. Its story begins with your first photograph.</p></div><Link className="button button-secondary" to="/worlds/new">Create your first world <span aria-hidden="true">→</span></Link></section> : !error && <>
       <section className="world-section"><div className="section-heading"><h2>In progress</h2><span>{active.length} {active.length === 1 ? 'world' : 'worlds'}</span></div>{active.length ? <div className="world-grid">{active.map(game => <WorldCard key={game.id} game={game} />)}</div> : <Empty>No civilizations in progress. Start a new one when you’re ready.</Empty>}</section>
       {archives.length > 0 && <section className="world-section"><div className="section-heading"><h2>Archives</h2><span>{archives.length}</span></div><div className="world-grid">{archives.map(game => <WorldCard key={game.id} game={game} />)}</div></section>}
@@ -109,7 +111,7 @@ function WorldList() {
 }
 function WorldCard({ game }: { game: Game }) {
   const archived = game.status === 'archived'
-  return <Link className="world-card surface-card" to={`/worlds/${game.id}`}><span className="world-journal-mark" aria-hidden="true"><Sigil kind={game.player_role} /></span><div className="world-card-top"><Badge state={archived ? 'complete' : game.status === 'active' ? 'active' : 'attention'}>{archived ? 'Archived' : game.status.replaceAll('_', ' ')}</Badge></div><h3>{game.name}</h3><p className="text-muted">{roleNames[game.player_role]} · Began {formatDate(game.created_at)}</p>{game.last_chronicle && <div className="world-excerpt"><p className="eyebrow">{game.last_chronicle.title}</p><p>“{game.last_chronicle.verdict}”</p></div>}<span className="card-link">{archived ? 'Read the archive' : 'Open civilization'} <span aria-hidden="true">→</span></span></Link>
+  return <Link className="world-card surface-card" to={`/worlds/${game.id}`}><div className="world-cover"><img className="world-cover-art" src={worldArtwork(game.id)} width="1536" height="1024" alt="" loading="lazy" decoding="async" /><span className="world-symbol"><Sigil kind={game.player_role} /></span><span className="world-cover-label">{roleNames[game.player_role]}</span></div><div className="world-card-top"><Badge state={archived ? 'complete' : game.status === 'active' ? 'active' : 'attention'}>{archived ? 'Archived' : game.status.replaceAll('_', ' ')}</Badge></div><h3>{game.name}</h3><p className="text-muted">{roleNames[game.player_role]} · Began {formatDate(game.created_at)}</p>{game.last_chronicle && <div className="world-excerpt"><p className="eyebrow">{game.last_chronicle.title}</p><p>“{game.last_chronicle.verdict}”</p></div>}<span className="card-link">{archived ? 'Read the archive' : 'Open civilization'} <span aria-hidden="true">→</span></span></Link>
 }
 function CreateWorld() {
   const token = useToken(); const navigate = useNavigate(); const [name, setName] = useState(''); const [role, setRole] = useState<PlayerRole>('observer'); const [busy, setBusy] = useState(false); const [error, setError] = useState<unknown>(null)
@@ -139,7 +141,7 @@ function WorldPage() {
   }, [game?.status, worldId, token])
   if (loading) return <Loading label="Opening this civilization…" />
   if (error || !game) return <ErrorNotice error={error ?? new Error('This world could not be found.')} />
-  return <><Link className="back-link" to="/worlds">← All worlds</Link><div className="page-heading world-journal-heading"><div><p className="eyebrow">{roleNames[game.player_role]} civilization</p><h1>{game.name}</h1><span className="world-founded">Founded {formatDate(game.created_at)}</span></div><Badge state={game.status === 'active' ? 'active' : game.status === 'archived' ? 'complete' : 'attention'}>{game.status.replaceAll('_', ' ')}</Badge></div>{resourceError !== null && <ErrorNotice error={resourceError} />}
+  return <><Link className="back-link" to="/worlds">← All worlds</Link><div className="world-banner" style={{ backgroundImage: `url(${worldArtwork(game.id)})` }}><div><p className="eyebrow">{roleNames[game.player_role]} civilization</p><h1>{game.name}</h1><span className="world-founded">Founded {formatDate(game.created_at)}</span></div><Badge state={game.status === 'active' ? 'active' : game.status === 'archived' ? 'complete' : 'attention'}>{game.status.replaceAll('_', ' ')}</Badge></div>{resourceError !== null && <ErrorNotice error={resourceError} />}
     <nav className="world-tabs" aria-label="Civilization sections">{(['home','rounds','agents','culture','history','settings'] as const).map(item => <button key={item} className={tab === item ? 'tab active' : 'tab'} aria-current={tab === item ? 'page' : undefined} onClick={() => setTab(item)}>{({home:'Overview',rounds:'Rounds',agents:'Agents',culture:'Culture',history:'History',settings:'Settings'})[item]}</button>)}</nav>
     <WorldRounds key={game.id} game={game} token={token} expanded={tab === 'rounds'} onRoundComplete={refresh} />
     {tab === 'home' && <Overview game={game} history={history} token={token} onRefresh={refresh} />}{tab === 'agents' && <AgentsPanel agents={agents} game={game} history={history} token={token} />}{tab === 'culture' && <CulturePanel traditions={traditions} />}{tab === 'history' && <HistoryPanel history={history} />}{tab === 'settings' && <SettingsPanel game={game} token={token} onRefresh={refresh} />}</>

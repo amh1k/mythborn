@@ -1,5 +1,7 @@
 # Mythborn: shortcomings and a more distinctive design direction
 
+**Visual scope correction (11 October 2026):** The user asked to retain the previous illustrated mythology design. The field-journal redesign below is superseded: preserve the rotating illustrated hero, world-cover artwork, civilization banners, medieval typography, and existing page layouts. Reliability, live debate, saved stage feedback, polling, and recovery controls remain in scope.
+
 This is a work plan based on the current repository, including uncommitted changes, reviewed on 10 October 2026. Code observations are distinguished from risks and work that still needs verification. Visual recommendations are design judgments based on the current components, styles, artwork documentation, and the mobile capture reviewed earlier in this session. This is not a new live usability or production audit.
 
 **The priority:** make the discovery experience reliable, then give it the character of a civilization's field journal. The most interesting material is already specific to Mythborn: a real photo, four conflicting interpretations, changing beliefs, and a recorded consequence. Let those things determine the interface.

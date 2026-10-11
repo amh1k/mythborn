@@ -446,22 +446,6 @@ h1 em, .creation-plate h2 em { font-style: normal; color: #e6bc7a; }
   .world-card:hover .world-cover-art { transform: none; }
 }
 
-/* Field journal: evidence and testimony carry the page. */
-.episode-layout { display: block; max-width: 52rem; margin-inline: auto; }
-.episode-heading { margin-bottom: var(--space-5); }
-.episode-heading h1 { font-size: clamp(1.65rem, 4vw, 2.4rem); }
-.episode-photo { max-height: 27rem; object-fit: contain; background: var(--surface-subtle); }
-.progress-card { padding: var(--space-4) 0; border: 0; border-block: 1px solid var(--border-subtle); background: transparent; box-shadow: none; }
-.progress-heading h2 { font-size: var(--text-base); font-weight: 600; }
-.progress-heading .eyebrow, .progress-card > .text-small { display: none; }
-.progress-explanation { font-size: var(--text-sm); margin-bottom: 0; }
-.progress-steps { margin-block: var(--space-3); }
-.progress-card > .button { padding: .4rem 0; background: transparent; border: 0; text-decoration: underline; }
+/* Recovery controls and request references complement the illustrated layout. */
 .round-control { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); margin-block: var(--space-3); }
 .error-reference { display: block; margin-top: .5rem; overflow-wrap: anywhere; }
-.world-journal-mark { display: block; width: 2.5rem; height: 2.5rem; margin-top: var(--space-5); color: var(--accent-primary); }
-.world-card h3 { font-family: var(--font-display); }
-.auth-story h1, .create-story h1 { font-family: var(--font-title); }
-.debate-columns { display: block; }
-.debate-entry { border: 0; border-bottom: 1px solid var(--border-subtle); background: transparent; box-shadow: none; }
-@media (max-width: 40rem) { .progress-steps { gap: .4rem; } .progress-steps li { font-size: .7rem; } .episode-heading { align-items: flex-start; flex-direction: column; gap: .5rem; } }
