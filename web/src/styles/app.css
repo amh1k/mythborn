@@ -83,7 +83,7 @@
 .role-icon { width: 2.2rem; color: var(--accent-secondary); }
 .role-option strong, .role-option small { display: block; }
 .role-option small { margin-top: .25rem; color: var(--text-secondary); font-size: var(--text-sm); font-weight: 400; }
-.privacy-note { margin-top: var(--space-3); padding: var(--space-4); border-left: 3px solid var(--color-copper); background: var(--color-copper-soft); font-size: var(--text-sm); }
+.privacy-note { margin-top: var(--space-3); padding: var(--space-3) 0; border: 0; background: transparent; font-size: var(--text-sm); }
 .privacy-note p { margin: .25rem 0 0; }
 .form-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-4); }
 .world-banner { display: flex; min-height: 14rem; align-items: center; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-6); padding: clamp(1.5rem, 4vw, 3rem); background: #152330 center 38% / cover; color: #faf8f3; }
