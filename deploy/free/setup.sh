@@ -6,7 +6,14 @@ set -eu
 : "${SQL_DATABASE:?SQL_DATABASE is required}"
 export SQL_PORT="${SQL_PORT:-5432}" SQL_PLUGIN=postgres12
 export PGHOST="$SQL_HOST" PGPORT="$SQL_PORT" PGUSER="$SQL_USER" PGPASSWORD="$SQL_PASSWORD" PGDATABASE="$SQL_DATABASE"
-if [ "${SQL_TLS:-true}" = true ]; then export PGSSLMODE=verify-full SQL_TLS=true; fi
+if [ -n "${SQL_TLS_CA_BASE64:-}" ]; then
+  export SQL_TLS_CA_FILE=/tmp/mythborn-database-ca.pem
+  printf '%s' "$SQL_TLS_CA_BASE64" | base64 -d > "$SQL_TLS_CA_FILE"
+fi
+if [ "${SQL_TLS:-true}" = true ]; then
+  export PGSSLMODE=verify-full SQL_TLS=true
+  export PGSSLROOTCERT="${SQL_TLS_CA_FILE:-/etc/ssl/certs/ca-certificates.crt}"
+fi
 
 # Run once from a trusted machine. The free Render tier has no pre-deploy jobs.
 # These isolated schemas contain Temporal state, never game tables.

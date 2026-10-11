@@ -16,6 +16,8 @@ values = {
     "SQL_DATABASE": unquote(url.path.strip("/")),
     "SQL_TLS": "false" if parse_qs(url.query).get("sslmode") == ["disable"] else "true",
 }
+if os.environ.get("SQL_TLS_CA_BASE64"):
+    values["SQL_TLS_CA_BASE64"] = os.environ["SQL_TLS_CA_BASE64"]
 if any("\n" in value or "\r" in value for value in values.values()):
     raise SystemExit("Docker env files do not support multiline connection values")
 fd = os.open(sys.argv[1], os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)

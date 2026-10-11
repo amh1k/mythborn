@@ -6,6 +6,10 @@ export TEMPORAL_HISTORY_SHARDS=16
 export SQL_HISTORY_SCHEMA=mythborn_temporal SQL_VISIBILITY_SCHEMA=mythborn_temporal_visibility
 export SQL_VISIBILITY_DATABASE="${SQL_DATABASE:?SQL_DATABASE is required}"
 export GOMAXPROCS=1
+if [ -n "${SQL_TLS_CA_BASE64:-}" ]; then
+  export SQL_TLS_CA_FILE=/tmp/mythborn-database-ca.pem
+  printf '%s' "$SQL_TLS_CA_BASE64" | base64 -d > "$SQL_TLS_CA_FILE"
+fi
 temporal_pid='' worker_pid='' api_pid=''
 shutdown() {
   trap - EXIT INT TERM

@@ -35,6 +35,8 @@ services:
         sync: false
       - key: SQL_TLS
         value: 'true'
+      - key: SQL_TLS_CA_BASE64
+        sync: false
       - key: MODEL_RPM
         value: '10'
       - key: MODEL_INPUT_TPM

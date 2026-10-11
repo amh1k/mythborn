@@ -24,6 +24,12 @@ and local Compose setup are unchanged. Initialize the two Temporal schemas once
 from a trusted machine before deployment (the free plan cannot run pre-deploy
 jobs). Load the existing `.env` without printing credentials:
 
+If the database uses a private certificate authority, set `SQL_TLS_CA_BASE64`
+to its base64-encoded PEM CA certificate before generating the private env file.
+Set the same value on Render. The setup tool and Temporal verify the database's
+certificate and hostname with that CA; databases with a publicly trusted
+certificate can leave this value empty.
+
 ```bash
 set -a
 . ./.env

@@ -20,6 +20,7 @@ persistence:
         tls:
           enabled: {{ env "SQL_TLS" | default "false" }}
           serverName: {{ env "SQL_HOST" | quote }}
+          caFile: {{ env "SQL_TLS_CA_FILE" | quote }}
         maxConns: 5
         maxIdleConns: 2
         maxConnLifetime: 1h
@@ -36,6 +37,7 @@ persistence:
         tls:
           enabled: {{ env "SQL_TLS" | default "false" }}
           serverName: {{ env "SQL_HOST" | quote }}
+          caFile: {{ env "SQL_TLS_CA_FILE" | quote }}
         maxConns: 3
         maxIdleConns: 1
         maxConnLifetime: 1h
