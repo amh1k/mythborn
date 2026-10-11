@@ -1,0 +1,11 @@
+.git
+.env
+.env.*
+**/.env*
+**/*credentials*.txt
+bin
+web/node_modules
+web/dist
+.agents
+.codex
+.aws

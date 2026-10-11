@@ -86,3 +86,21 @@ processing errors retain their bounded retries and manual retry action.
 
 This uses Temporal's development server, suitable for local development and demos.
 See the [official CLI guide](https://docs.temporal.io/cli/setup-cli).
+
+## Install the local Temporal CLI
+
+The development helper expects the CLI at `bin/temporal`. On Linux, download the
+Linux amd64 or arm64 archive linked from [Temporal's official CLI installation
+guide](https://docs.temporal.io/cli/setup-cli), extract it, and place the
+`temporal` executable here:
+
+```bash
+mkdir -p bin
+# Move the extracted temporal executable into bin/temporal.
+chmod +x bin/temporal
+bin/temporal --version
+```
+
+Keep the CLI binary in `bin/`; that folder is ignored by Git. Use the same
+architecture as the machine running Mythborn. The first run starts Temporal's
+local development service with persistent state under `bin/local-dev/`.

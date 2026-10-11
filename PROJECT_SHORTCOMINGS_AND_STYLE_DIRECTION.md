@@ -15,35 +15,58 @@ Do not spend the next iteration rebuilding these features:
 - A Rounds view and reusable round progress component in the current working tree.
 - Locally bundled fonts, light and dark themes, reduced-motion handling, and responsive layouts.
 
+### Agreed behavior: stage feedback and automatic retries
+
+The progress UI should explain the current work, rather than relying on a small status label. This follow-up implements the following behavior in the discovery page and records it here so the requirements and interface remain aligned:
+
+| State | Feedback shown to the player |
+| --- | --- |
+| Queued | Waiting to start; the page checks for updates automatically. |
+| Describing | Preparing the shared photo description before the agents begin. |
+| Awaiting review or clarity choice | Waiting for the player's decision; no processing animation. |
+| First reactions | Agents are forming their initial interpretations; received responses are counted and shown. |
+| Rebuttals | Agents are responding to the first reactions; the UI explicitly says “Rebuttals in progress,” counts received rebuttals, and marks unfinished agents as preparing a rebuttal. |
+| Writing | The Historian is writing the chronicle after the debate; other agents show that their debate is complete. |
+| Model rate limit | Automatic retry countdown for the affected agent or phase; completed responses stay visible. No reload or manual retry is required for a quota wait. |
+| Live view unavailable | Reconnecting to live progress; the saved stage remains visible. Do not imply that the model itself stopped or completed. |
+| Paused after an ordinary failure or prolonged quota exhaustion | Clearly paused, with a reason and the existing manual retry action. Ordinary short quota waits still retry automatically. |
+| Complete | Saved chronicle, with no processing animation. |
+
+Use a restrained activity indicator only for active work. Completed responses, quota waits, player decisions, and paused rounds must not look as though an agent is still generating a response. Respect reduced motion. Counts represent real received contributions, not an invented percentage or completion estimate.
+
+**Implemented and exercised locally:** HTTP 429 causes a durable Temporal wait, with retries capped at eight attempts and a 45-minute total window. Successful agent contributions remain available while the affected call waits. Separate rolling 60-second request/token schedules now cover the text and embedding models. Budgets are split across the configured worker count; no shared database or distributed scheduler coordinates independently configured deployments. The page polls progress automatically, so refreshing is unnecessary. A paused prolonged outage is different from an ordinary automatic retry countdown.
+
+**Verified locally:** the full Go suite, quota interruption/checkpoint workflow cases, isolated PostgreSQL migration checks, frontend production build, and mocked browser navigation/stage scenarios pass. These checks do not replace the real-photo acceptance run below.
+
 The four agents are characters. The player roles are Observer, God, and Messenger; Admin is an account permission. Keep those concepts distinct in copy and documentation.
 
 ## 2. Shortcomings to resolve
 
 Priority meanings: **P0** before relying on the app for a public demo; **P1** before a wider release; **P2** after the core experience is dependable.
 
-### P0 — Long quota waits can hold up the entire civilization
+### P0 — Validate the prolonged quota policy and lifecycle interruption
 
-**Observed:** [rate_limit.go](internal/workflows/rate_limit.go) retries 429 failures indefinitely. [Coordinator](internal/workflows/coordinator.go) handles a command synchronously inside its signal selector and returns to the next command only after that work finishes.
+**Original issue:** quota waits previously retried indefinitely while the coordinator handled a command synchronously. A persistent outage could keep later lifecycle commands queued and accumulate history.
 
-**Consequence inferred from the control flow:** a persistent quota problem can keep later end/delete commands queued behind the episode. Continue-as-new also happens between commands, so a very long retrying command can accumulate workflow history.
+**Current follow-up implementation:** [rate_limit.go](internal/workflows/rate_limit.go) now contains an increasing-delay retry budget, and [Coordinator](internal/workflows/coordinator.go) listens for lifecycle interrupts so active work can be canceled before handling end/delete/set-aside commands. These changes are present in the working tree; their existence does not establish successful deployment or recovery behavior.
 
-**Resolve:** retain automatic retries for ordinary quota windows, but add a deliberate policy for prolonged exhaustion: increasing delay, a visible explanation, and an explicit way to cancel or set aside the work. Allow lifecycle commands to interrupt a waiting episode safely. Preserve completed contributions when pausing or continuing workflow execution.
+**Resolve:** verify the retry budget, the reason shown when exhausted, safe interruption, and checkpoint retention. Expose the new set-aside endpoint in the interface if it is not already wired there. Confirm that bounded waits and lifecycle interruption keep history growth under control while retaining automatic retries for short quota windows.
 
 **Done when:** a simulated extended quota outage keeps prior responses intact, does not generate a chronicle, and still allows a requested deletion to complete. A long-running retry simulation stays within a defined history budget.
 
-### P0 — Retries manage quota failures, but do not prevent them
+### P0 — Validate proactive model budgets across worlds and workers
 
-**Observed:** [Gemini adapter](internal/models/gemini.go) limits simultaneous calls to four per adapter instance. It does not schedule requests against a shared requests-per-minute or input-token budget. Agent prompts include beliefs, memories, traditions, and—in the rebuttal phase—other agents' reactions.
+**Original issue:** limiting simultaneous calls alone did not schedule requests against a shared request or input-token budget. **Current follow-up implementation:** [model scheduling](internal/models/budget.go) spaces requests, estimates input-token usage, caps text prompts at 48 KiB, and records usage and wait timings. Instances with the same provider key and budget share a scheduler within one process. `MODEL_RPM`, `MODEL_INPUT_TPM`, and `MODEL_WORKER_COUNT` configure the allowance; separate workers divide it using the declared worker count. This is a configured allocation, not a distributed quota coordinator.
 
-**Resolve:** measure prompt size, generation count, and wait time per episode. Bound the amount of lore sent to each call, stagger bursts where useful, and introduce provider-aware scheduling across active worlds. If more workers are introduced, account for their combined usage. Keep the existing retry mechanism as recovery.
+**Remaining:** compare estimates against actual provider usage during a real run and configure quotas from the account dashboard. Confirm production worker replicas share the declared total worker count. The configured scheduler splits allowance across replicas; independently deployed processes do not exchange live reservations.
 
 **Done when:** you can explain the approximate request/token cost of a discovery and demonstrate that several worlds do not continuously send another burst immediately after the same quota window expires.
 
-### P0 — Uploaded photos are accepted without full image processing
+### P0 — Verify the new image-processing path
 
-**Observed:** [observation upload](internal/app/observations.go) checks the byte limit and image signatures, then uploads the original bytes. That path does not decode and re-encode images, limit decoded pixel dimensions, normalize orientation, or strip metadata.
+**Original issue:** upload accepted images using byte/signature checks without decoding, normalization, or metadata removal. **Current follow-up implementation:** [photo processing](internal/app/photos.go) now decodes images, enforces a 24-megapixel limit, normalizes orientation, resizes to a maximum edge of 2048 pixels, and re-encodes JPEG before [upload](internal/app/observations.go). The implementation comments specify retention of only the normalized image.
 
-**Resolve:** introduce a bounded image-processing step before storage and model use. Reject malformed images clearly; normalize accepted images to an agreed size and orientation; remove metadata from the processed image. Decide and document whether original files are retained.
+**Verified locally:** tests cover all eight EXIF orientations, GPS/comment removal, transparent input, edge resizing, corrupt images, and oversized decoded dimensions. Duplicate detection hashes the submitted original while only the resized, metadata-free JPEG is stored. Upload guidance now states the byte and pixel limits. A live private-bucket upload and retrieval still needs the acceptance run.
 
 **Done when:** rotated phone photos display correctly, oversized decoded images are rejected, corrupt inputs receive useful errors, and the image sent to the model contains no retained location metadata. “Location metadata is not used” should not be confused with “location metadata is removed.”
 
@@ -51,15 +74,15 @@ Priority meanings: **P0** before relying on the app for a public demo; **P1** be
 
 **Verification gap:** earlier work established local connectivity, a successful model probe, automated retry tests, and browser checks with mocked data. Those checks do not establish a repeatable successful journey through real upload, all agent calls, saved lore, and later retrieval. Older implementation notes also contain statements that have become stale.
 
-**Resolve:** document a small acceptance run: create a world, submit a photo, finish a chronicle, reload, submit a related photo, and confirm that prior history actually affects the next episode. Include one worker interruption and one controlled rate limit. Record failures and timings instead of treating a passing UI build as completion of the integration.
+**Documented in [DEPLOYMENT.md](DEPLOYMENT.md); still to run:** create a world, submit a photo, finish its chronicle, reload, submit a related photo, and confirm that prior history is actually retrieved for the next episode. Include one worker interruption and one controlled rate limit. Record failures and timings instead of treating a passing UI build as completion of the integration.
 
 **Done when:** another person can follow the same run and inspect the resulting chronicles, relevant belief changes, and absence of duplicate commits.
 
-### P1 — “Resume from saved progress” has limits outside the quota path
+### P1 — Verify individual checkpoints beyond the quota path
 
-**Observed:** completed reaction/rebuttal arrays are assigned to `RoundProgress` when the whole phase returns. A phase error can return nil arrays even though some siblings succeeded. The new quota handling preserves siblings while that phase remains active, but a later ordinary failure followed by manual retry can still repeat successful work from the failed phase.
+**Original issue:** successful contributions from a failed phase could be lost on a later manual retry. **Current follow-up implementation:** `runAgentPhase` now checkpoints accepted contributions individually and skips saved agents, with evidence-aware checkpoint invalidation. Verify this behavior rather than treating it as an absent feature.
 
-**Resolve:** checkpoint accepted contributions individually using stable agent/phase/request identities. Define when evidence or beliefs have changed enough to invalidate a checkpoint. Keep transcript retention consistent with the product's temporary-debate policy.
+**Verified locally:** workflow tests show three accepted agent responses survive a fourth agent's ordinary failure, then only that missing agent runs on manual retry. Evidence changes invalidate the checkpoint. Debate text remains transient workflow state and is not added to permanent tables. A worker-restart replay is still part of the live acceptance run.
 
 **Done when:** three successful contributions survive a fourth agent's non-quota failure and a manual retry only requests the missing contribution, unless its inputs changed.
 
@@ -67,39 +90,41 @@ Priority meanings: **P0** before relying on the app for a public demo; **P1** be
 
 **Observed:** [agent activities](internal/activities/activities.go) provide personality, beliefs, memory, and phase instructions. Structured validation checks output shape and permitted changes. That does not establish whether the four voices are memorable, whether they react to the actual photo, or whether the Historian accurately preserves dissent.
 
-**Resolve:** write a small set of reference discoveries and review outputs for concrete evidence, distinct language, continuity, justified belief changes, and repetitive phrasing. Give each character motivations and habits beyond their profession. Let an uneventful discovery remain uneventful; do not force a new religion or ritual every time.
+**Implemented:** prompts now include grounded-evidence and uncertainty rules, varied-length guidance, and motivations for belonging/promises (Priest), testable mechanisms (Scientist), reversible safety choices (Soldier), and attributed dissent (Historian).
+
+**Remaining:** use the reference set and scoring sheet in [CHARACTER_EVALUATION.md](CHARACTER_EVALUATION.md) to review actual outputs for concrete evidence, distinct language, continuity, justified changes, and repetition. Let an uneventful discovery remain uneventful; do not force a new religion or ritual every time.
 
 **Done when:** readers can distinguish speakers without seeing their labels, identify which visible detail caused each interpretation, and trace the chronicle's claims back to the debate. Treat this as an evaluation task, not a claim that all current outputs are bad.
 
-### P1 — Photo-description repair can lose access to the photo
+### P1 — Verify photo evidence during JSON repair
 
-**Observed:** in [GenerateJSON](internal/models/gemini.go), the initial request can include an image, but the JSON-repair request contains only text, the instruction, and the failed draft.
+**Original issue:** JSON repair omitted the original photo. **Current follow-up implementation:** [GenerateJSON](internal/models/gemini.go) now attaches the image again and instructs the repair to preserve evidence and uncertainty without inventing observations.
 
-**Resolve:** preserve the necessary visual evidence during repair or restrict repair to restructuring existing claims without introducing new observations. Review repaired descriptions against the original image.
+**Verified in a request-level model-client test:** an invalid draft triggers a second request that contains the original image and the uncertainty-preservation instruction. Review a real repair against its photo during the live acceptance run.
 
 **Done when:** malformed model JSON does not cause a repaired description to invent details or silently change the observed evidence.
 
-### P1 — Failure messages and diagnostics need to meet in the middle
+### P1 — Verify diagnostics from the player report through the worker
 
-**Observed:** [HTTP error handling](internal/httpapi/handlers/games.go) maps errors to status codes, but useful messages are supplied only for selected cases. A common request identifier is not evident in the inspected router and handler paths. Background workflow logs already contain useful workflow identifiers.
+**Current follow-up implementation:** [request diagnostics](internal/api/diagnostics.go) now emit `X-Request-ID` and structured request timings. Common [HTTP errors](internal/httpapi/handlers/games.go) and authentication errors include useful messages and a request reference. Model generation logs include game, round, agent, phase, estimated and actual usage where available, and queue wait time. API logs include request IDs and returned command/round IDs; model events include the same round and workflow event IDs. The browser shows request references on errors. A live log query and outage report still need checking.
 
-**Resolve:** give common failures an actionable explanation and a stable reference that connects the screen, API request, command, round, and worker logs. Track prolonged waits, queue age, model validation failures, and activity durations without dumping private prompts into user-facing errors.
+**Remaining:** verify the correlation with deployed logs and measure queue age and activity duration during a controlled outage. Prompts, model responses, photos, and credentials are not logged.
 
 **Done when:** a report such as “this discovery has been waiting for ten minutes” can be traced to a specific stage and cause using one reference.
 
 ### P1 — Local operation is better documented than fresh setup and hosting
 
-**Observed:** the helper expects executables under `bin/`, including the Temporal CLI. The README describes the new retry and restart behavior, while their implementation remains among the uncommitted working-tree changes at review time. [TECHNOLOGIES.md](TECHNOLOGIES.md) still says no integration is implemented and names frontend tooling that is not reflected in the current dependencies. No `.github` workflow directory was found in this checkout.
+**Implemented:** README instructions install Goose, apply migrations and seeds, and document first-admin setup. `DEPLOYMENT.md`, a Render Blueprint, and GitHub Actions checks now describe the Go API/worker, static site, and release commands. The Temporal CLI is used from `bin/` in local development. These deployment files have not been validated by creating a hosted Render environment.
 
-**Resolve:** reconcile the docs with the actual code; make a clean clone reproducible; document CLI placement, migrations, seeds, and initial administration. Establish a deployment configuration and release checks before presenting a hosted URL as ready. Publish the documentation and the implementation it describes together in a future coordinated release.
+**Remaining:** verify clean-clone instructions on another machine, validate the Blueprint in Render, configure real service secrets, and run migrations/deployment through a staged release. Local CI checks cannot establish recovery on the hosted environment.
 
 **Done when:** a clean checkout can be configured without undocumented local files, and the chosen hosted environment can recover its worker and persistent workflow state after a restart. Local Temporal should remain a supported development option.
 
 ### P2 — UI structure and polling will become harder to maintain
 
-**Observed:** much of the application still lives in [app.tsx](web/src/app.tsx). Rounds, episode state, and live debate have separate polling loops. The newly extracted progress components are a useful start.
+**Partly addressed:** the discovery route now lives in [episode.tsx](web/src/pages/episode.tsx), and shared polling pauses hidden/offline tabs and backs off after errors. World-round and live-debate views use that hook. Other screens, including world setup and admin, still live in `app.tsx`; they need staged extraction.
 
-**Resolve:** separate screens and feature logic where that reduces duplication. Pause unnecessary polling on hidden or irrelevant screens, back off during outages, and avoid redundant refreshes of the same data. Measure before introducing additional state-management infrastructure.
+**Remaining:** extract the remaining screens when they change, and unify Messenger command polling. Browser checks cover world navigation and responsive episode stages; verify request counts on multiple open tabs before a wider release.
 
 **Done when:** opening multiple tabs does not multiply background requests unnecessarily, and changing episode status handling does not require editing several competing implementations.
 

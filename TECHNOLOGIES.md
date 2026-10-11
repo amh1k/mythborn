@@ -1,6 +1,6 @@
 # Mythborn: Technology Stack
 
-Status: **technology decision for version 1; no integration is implemented yet.** The [functional specification](./FUNCTIONAL_SPEC.md) defines product behavior. This document fixes the stack; [ARCHITECTURE.md](./ARCHITECTURE.md) details service boundaries, data flows, workflows, and failure handling.
+Status: **current stack decision and implementation notes.** See the current README, LOCAL_DEVELOPMENT, IMPLEMENTATION_PLAN, and `PROJECT_SHORTCOMINGS_AND_STYLE_DIRECTION.md` for verified behavior versus remaining integration checks. The [functional specification](./FUNCTIONAL_SPEC.md) defines product behavior. This document fixes the stack; [ARCHITECTURE.md](./ARCHITECTURE.md) details service boundaries, data flows, workflows, and failure handling.
 
 ## The idea
 
@@ -18,9 +18,9 @@ The main demo: submit one outdoor photo, watch several agents react differently,
 
 | Layer | Choice | Responsibility |
 | --- | --- | --- |
-| Browser app | **React + TypeScript + Vite**, plain CSS, React Router, TanStack Query | Mobile-friendly camera/upload UI, authenticated pages, and polling episode progress |
+| Browser app | **React + TypeScript + Vite**, plain CSS, React Router, shared visibility-aware polling | Mobile-friendly camera/upload UI, authenticated pages, and polling episode progress |
 | API | **Go 1.26+ + `net/http` ServeMux** | Authorization, upload validation, world and episode endpoints, photo access, and workflow commands through the database outbox |
-| Workflow runtime | **Temporal Go SDK + Temporal Cloud** | Durable civilization coordinator, four persistent agent workflows, retries, and council timers |
+| Workflow runtime | **Temporal Go SDK + Temporal Cloud (local dev server supported)** | Durable civilization coordinator, four persistent agent workflows, retries, and council timers |
 | Deployment | **Render Static Site + paid Web Service + paid Background Worker** | Host the agent-facing React frontend, run the Go API, and execute the four agents in an always-on Temporal worker |
 | Generative model | **Gemma 4 `gemma-4-26b-a4b-it` via the Gemini API**, using `google.golang.org/genai` in the worker | One image description; four character reactions and rebuttals; chronicle, council note, and suggestion |
 | Memory embeddings | **`gemini-embedding-001` via the Gemini API**, 768 dimensions | Embed saved lore and retrieval queries for semantic recall |
@@ -55,7 +55,7 @@ React static site ──JWT/API──> Go API ──SQL──> Tiger Cloud
 
 The frontend talks to Supabase only for authentication. Go middleware validates each JWT against Supabase's signing keys (using a cached JWKS and `jwx/v4`) and checks the authenticated account owner on every Tiger Data query; account-level administrators receive the separately defined application-wide access. Verify signature, expected algorithm, issuer, audience, and expiry before trusting the `sub` claim. The Supabase service-role credential stays server-side. The browser never receives Temporal, database, model, or service-role secrets. The `jwx/v4` dependency requires Go 1.26+. [Supabase Auth](https://supabase.com/docs/guides/auth), [JWT signing keys](https://supabase.com/docs/guides/auth/signing-keys), [jwx JWT/JWKS documentation](https://pkg.go.dev/github.com/lestrrat-go/jwx/v4/jwt), [jwx v4 compatibility notes](https://github.com/lestrrat-go/jwx/blob/develop/v4/Changes-v4.md), [Google sign-in](https://supabase.com/docs/guides/auth/social-login/auth-google), and [GitHub sign-in](https://supabase.com/docs/guides/auth/social-login/auth-github) cover the required account methods.
 
-The API accepts a photo, checks its decoded type, file size, and pixel count, then decodes and re-encodes it to strip EXIF metadata (including possible location) before storing it in a private bucket. Go's standard image packages handle JPEG/PNG; `golang.org/x/image/webp` decodes WebP before normalizing it to JPEG/PNG. It stores only the object path in Tiger Data. Use the Supabase Storage HTTP API from Go; the browser gets a short-lived photo URL only after an ownership check. Deletion removes both the database records and objects. [Supabase private bucket docs](https://supabase.com/docs/guides/storage/buckets/fundamentals).
+The API accepts JPEG, PNG, and WebP up to 10 MiB, checks decoded dimensions against a 24-megapixel limit, applies EXIF orientation, resizes to 2048 pixels, and re-encodes as JPEG to remove metadata including possible location. Only the normalized copy is kept in the private bucket. A full live upload-and-retrieval journey remains an acceptance check. Go's standard image packages handle JPEG/PNG; `golang.org/x/image/webp` decodes WebP before normalizing it to JPEG/PNG. It stores only the object path in Tiger Data. Use the Supabase Storage HTTP API from Go; the browser gets a short-lived photo URL only after an ownership check. Deletion removes both the database records and objects. [Supabase private bucket docs](https://supabase.com/docs/guides/storage/buckets/fundamentals).
 
 Deploy three Render services from one repository: a static site for `web/`, a paid web service running `cmd/api`, and a paid background worker running `cmd/worker`. The two Go binaries build from one `go.mod` and share `internal/` workflow payloads, database code, and model clients. Use Temporal Cloud rather than deploying a Temporal server/database on Render. **A free Render web service sleeps when idle, and Render does not offer a free background worker**; the project's Hacktoberfest $50 Render credit makes paid compute the intended demo setup. Render's free static site is suitable for the browser assets. [Render service types](https://render.com/docs/service-types), [free-service limits](https://render.com/docs/free), and [compute plans](https://render.com/docs/compute-plans).
 
@@ -71,7 +71,7 @@ An observation has a photo object path, source-byte hash, shared visual descript
 
 The API writes a pending command to `workflow_outbox` in the same transaction as the observation/ending/deletion record. The worker claims and dispatches it to Temporal, then marks delivery; processing is marked separately with the game-state transaction that completes the command. Retries use stable workflow and event IDs. This closes the database-commit/Temporal-signal gap if the API crashes between those steps. A civilization coordinator workflow owns the episode queue and daily council timer. Four separately addressable agent workflows hold their own waiting state; they receive the shared evidence, produce initial responses, then rebuttals. External model, storage, embedding, and SQL work happens in Temporal **activities**, with bounded retries and idempotent writes. Workflow code uses Temporal's deterministic primitives for waits and concurrency; ordinary Go network calls and goroutines stay outside workflow logic. Long-lived workflows use Continue-As-New periodically to bound history size. [Temporal Go SDK guide](https://docs.temporal.io/develop/go).
 
-The UI uses `GET /episodes/{id}` polling while an episode is active; no WebSocket or SSE infrastructure is needed for the first demo. The minimum API surface is authentication-aware world list/create/get/end/delete, observation upload, episode detail/progress, agent belief history, culture/history, Messenger conversation, and the photo URL endpoint. Mutations take idempotency keys where repeat submission could create duplicate episodes.
+The UI uses visibility-aware polling for saved episode state and transient Temporal debate preview, with slower retries during outages; it pauses unnecessary requests while a tab is hidden. No WebSocket or SSE infrastructure is needed for the first demo. The minimum API surface is authentication-aware world list/create/get/end/delete, observation upload, episode detail/progress, agent belief history, culture/history, Messenger conversation, and the photo URL endpoint. Mutations take idempotency keys where repeat submission could create duplicate episodes.
 
 ## Memory and model behavior
 
@@ -86,7 +86,7 @@ The Gemini API's current Gemma 4 entry is **free-tier only**, with model usage l
 1. Scaffold `web/` and a Go module with `cmd/api`, `cmd/worker`, `internal/`, and `migrations/`; run local PostgreSQL 17 with Tiger extensions and a local Temporal dev server.
 2. Implement Supabase sign-in and server ownership checks; create civilizations with immutable player roles.
 3. Build private photo upload, neutral Gemma description, pending episode row, and outbox dispatch.
-4. Implement four agent workflows, reaction/rebuttal UI polling, atomic chronicle commit, and belief/tradition history.
+4. Implement four agent workflows, reaction/rebuttal progress, atomic chronicle commit, and belief/tradition revision history.
 5. Add embedding-backed memory, Messenger conversations, daily councils, archives, and deletion.
 6. Deploy the static site, API, and always-on worker; rehearse a real two-photo demo and a worker restart.
 
