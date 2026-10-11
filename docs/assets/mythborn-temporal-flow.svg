@@ -4,7 +4,7 @@
   <defs>
     <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 10 5 0 10Z" fill="#b98645"/></marker>
     <style>
-      .bg{fill:#f7f2e9}.title{font:700 27px Georgia,serif;fill:#27231f}.sub{font:14px Arial,sans-serif;fill:#6d665d}.card{fill:#fffdf8;stroke:#d8c9b4;stroke-width:1.5}.dark{fill:#302b27}.gold{fill:#f3e5cf;stroke:#bd925d;stroke-width:1.5}.h{font:700 16px Arial,sans-serif;fill:#302b27}.lh{fill:#fffaf1}.p{font:13px Arial,sans-serif;fill:#625b53}.small{font:12px Arial,sans-serif;fill:#746c62}.num{font:700 13px Arial,sans-serif;fill:#fffaf1}.numc{fill:#a8783c}.line{fill:none;stroke:#b98645;stroke-width:2.2;marker-end:url(#arrow)}.dash{fill:none;stroke:#b98645;stroke-width:2;stroke-dasharray:6 6}.divider{stroke:#e4d9c9;stroke-width:1}
+      .bg{fill:#f7f2e9}.title{font:700 27px Georgia,serif;fill:#27231f}.sub{font:14px Arial,sans-serif;fill:#6d665d}.card{fill:#fffdf8;stroke:#d8c9b4;stroke-width:1.5}.dark{fill:#302b27}.gold{fill:#f3e5cf;stroke:#bd925d;stroke-width:1.5}.h{font:700 16px Arial,sans-serif;fill:#302b27}.p{font:13px Arial,sans-serif;fill:#625b53}.lh{fill:#fffaf1}.p.lh{fill:#fffaf1}.small{font:12px Arial,sans-serif;fill:#746c62}.num{font:700 13px Arial,sans-serif;fill:#fffaf1}.numc{fill:#a8783c}.line{fill:none;stroke:#b98645;stroke-width:2.2;marker-end:url(#arrow)}.dash{fill:none;stroke:#b98645;stroke-width:2;stroke-dasharray:6 6}.divider{stroke:#e4d9c9;stroke-width:1}
     </style>
   </defs>
   <rect class="bg" width="1200" height="720" rx="22"/>
@@ -33,7 +33,7 @@
   <rect class="card" x="385" y="410" width="165" height="62" rx="12"/><text class="h" x="409" y="437">Scientist</text><text class="small" x="409" y="458">reaction → rebuttal</text>
   <rect class="card" x="580" y="410" width="165" height="62" rx="12"/><text class="h" x="604" y="437">Soldier</text><text class="small" x="604" y="458">reaction → rebuttal</text>
   <rect class="card" x="775" y="410" width="235" height="62" rx="12"/><text class="h" x="799" y="437">Historian</text><text class="small" x="799" y="458">contributes in both phases</text>
-  <path class="line" d="M600 499V550"/>
+  <path class="line" d="M600 499V525H410V550"/>
   <rect class="card" x="270" y="550" width="280" height="105" rx="16"/>
   <circle class="numc" cx="296" cy="576" r="14"/><text class="num" x="292" y="581">6</text>
   <text class="h" x="320" y="584">Historian writes</text><text class="p" x="294" y="612">A chronicle from the debate</text><text class="p" x="294" y="634">and proposed lasting changes</text>

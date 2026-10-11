@@ -47,7 +47,7 @@ The frontend uses **React, TypeScript, and Vite** and is served by **Vercel**. A
 
 The services have separate responsibilities: the browser talks to the API, while only the worker coordinates model calls and database changes. Temporal keeps execution history in its own Tiger Data schemas.
 
-![Mythborn service architecture](https://raw.githubusercontent.com/amh1k/mythborn/main/docs/assets/mythborn-architecture.svg)
+![Mythborn service architecture](https://raw.githubusercontent.com/amh1k/mythborn/main/docs/assets/mythborn-architecture.png)
 
 ### Gemma: four perspectives on shared evidence
 
@@ -67,7 +67,7 @@ The hosted deployment runs **Temporal 1.32.0** alongside the API and worker. Tem
 
 The deployed model key is currently using Google AI Studio's free tier, so Gemini quota limits can cause rate limits, especially during bursts of agent calls. Rate limits are handled in the backend: when the model provider returns a quota error, the workflow schedules a durable retry timer and exposes the next retry time to the interface. Successful agents' contributions remain available while the affected operation waits. Retries use backoff and a bounded quota budget; persistent exhaustion pauses the round for attention.
 
-![Temporal rate-limit recovery](https://raw.githubusercontent.com/amh1k/mythborn/main/docs/assets/mythborn-rate-limit-retry.svg)
+![Temporal rate-limit recovery](https://raw.githubusercontent.com/amh1k/mythborn/main/docs/assets/mythborn-rate-limit-retry.png)
 
 This matters to the story itself: a provider error should remain processing status, rather than becoming an agent's opinion or a fictional unresolved rebuttal.
 
@@ -75,7 +75,7 @@ The application also uses a **transactional outbox** to hand database events to 
 
 This sequence shows how a discovery moves through the Temporal coordinator. The photo-description and player-review steps are omitted here so the diagram stays focused on the agent debate and durable commit.
 
-![A discovery through Temporal](https://raw.githubusercontent.com/amh1k/mythborn/main/docs/assets/mythborn-temporal-flow.svg)
+![A discovery through Temporal](https://raw.githubusercontent.com/amh1k/mythborn/main/docs/assets/mythborn-temporal-flow.png)
 
 [Explore the workflow implementation](https://github.com/amh1k/mythborn/tree/main/internal/workflows).
 

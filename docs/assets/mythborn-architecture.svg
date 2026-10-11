@@ -5,7 +5,7 @@
     <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 10 5 0 10Z" fill="#b98645"/></marker>
     <marker id="arrow-muted" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 10 5 0 10Z" fill="#837b72"/></marker>
     <style>
-      .bg{fill:#f7f2e9}.title{font:700 27px Georgia,serif;fill:#27231f}.sub{font:14px Arial,sans-serif;fill:#6d665d}.rail{fill:#eee5d7;stroke:#c9b89f;stroke-width:2;stroke-dasharray:8 7}.card{fill:#fffdf8;stroke:#d8c9b4;stroke-width:1.5}.dark{fill:#302b27;stroke:#302b27}.gold{fill:#f3e5cf;stroke:#bd925d;stroke-width:1.5}.h{font:700 16px Arial,sans-serif;fill:#302b27}.light{fill:#fffaf1}.p{font:13px Arial,sans-serif;fill:#625b53}.tiny{font:11px Arial,sans-serif;fill:#746c62}.line{fill:none;stroke:#b98645;stroke-width:2.2;marker-end:url(#arrow)}.muteline{fill:none;stroke:#837b72;stroke-width:1.8;marker-end:url(#arrow-muted)}.lab{font:11px Arial,sans-serif;fill:#73695d}
+      .bg{fill:#f7f2e9}.title{font:700 27px Georgia,serif;fill:#27231f}.sub{font:14px Arial,sans-serif;fill:#6d665d}.rail{fill:#eee5d7;stroke:#c9b89f;stroke-width:2;stroke-dasharray:8 7}.card{fill:#fffdf8;stroke:#d8c9b4;stroke-width:1.5}.dark{fill:#302b27;stroke:#302b27}.gold{fill:#f3e5cf;stroke:#bd925d;stroke-width:1.5}.h{font:700 16px Arial,sans-serif;fill:#302b27}.p{font:13px Arial,sans-serif;fill:#625b53}.h.light,.p.light{fill:#fffaf1}.tiny{font:11px Arial,sans-serif;fill:#746c62}.line{fill:none;stroke:#b98645;stroke-width:2.2;marker-end:url(#arrow)}.muteline{fill:none;stroke:#837b72;stroke-width:1.8;marker-end:url(#arrow-muted)}.lab{font:11px Arial,sans-serif;fill:#73695d}
     </style>
   </defs>
   <rect class="bg" width="1200" height="690" rx="22"/>
