@@ -284,12 +284,15 @@ func (s *Store) RetryRound(ctx context.Context, accountID, gameID, roundID domai
 	if !errors.Is(err, contracts.ErrNoRows) {
 		return "", err
 	}
-	if gameStatus != "active" {
+	if gameStatus != "active" && gameStatus != "ending" {
 		return "", ErrStateConflict
 	}
-	var roundStatus string
-	if err = tx.QueryRow(ctx, `SELECT status FROM rounds WHERE game_id=$1 AND id=$2 FOR UPDATE`, string(gameID), string(roundID)).Scan(&roundStatus); err != nil {
+	var roundStatus, roundKind string
+	if err = tx.QueryRow(ctx, `SELECT status,kind FROM rounds WHERE game_id=$1 AND id=$2 FOR UPDATE`, string(gameID), string(roundID)).Scan(&roundStatus, &roundKind); err != nil {
 		return "", normalizeNotFound(err)
+	}
+	if gameStatus == "ending" && roundKind != "closing" {
+		return "", ErrStateConflict
 	}
 	if roundStatus != "failed" && roundStatus != "needs_attention" {
 		return "", ErrStateConflict

@@ -20,6 +20,15 @@ func registerEpisodeRoutes(mux *http.ServeMux, deps api.Dependencies) {
 	debates := app.Debates{Store: store, Reader: deps.Debates}
 	observations := app.Observations{Store: store, Photos: deps.Photos}
 	wrap := func(fn http.HandlerFunc) http.Handler { return auth.Middleware(deps.Auth, fn) }
+	mux.Handle("POST /api/v1/episodes/{id}/abandon", wrap(func(w http.ResponseWriter, r *http.Request) {
+		p, _ := auth.PrincipalFromContext(r.Context())
+		id, err := episodes.Abandon(r.Context(), p, domain.ID(r.PathValue("id")), idempotencyKey(r))
+		if err != nil {
+			writeError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusAccepted, map[string]domain.ID{"command_id": id})
+	}))
 	mux.Handle("GET /api/v1/worlds/{id}/episodes", wrap(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")
 		p, _ := auth.PrincipalFromContext(r.Context())

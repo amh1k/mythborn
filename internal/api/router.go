@@ -3,10 +3,12 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/amh1k/mythborn/internal/auth"
 	"github.com/amh1k/mythborn/internal/contracts"
@@ -43,7 +45,9 @@ func NewHandler(deps Dependencies, registrars ...RouteRegistrar) http.Handler {
 		_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 	})
 	mux.HandleFunc("GET /readyz", func(w http.ResponseWriter, r *http.Request) {
-		if deps.DB == nil || deps.DB.Ping(r.Context()) != nil {
+		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+		defer cancel()
+		if deps.DB == nil || deps.DB.Ping(ctx) != nil {
 			writeAPIError(w, http.StatusServiceUnavailable, "not_ready")
 			return
 		}
@@ -54,7 +58,7 @@ func NewHandler(deps Dependencies, registrars ...RouteRegistrar) http.Handler {
 			registrar.RegisterRoutes(mux, deps)
 		}
 	}
-	return cors(deps.CORSAllowedOrigins, mux)
+	return diagnostics(deps.Logger, cors(deps.CORSAllowedOrigins, mux))
 }
 
 func cors(origins []string, next http.Handler) http.Handler {
@@ -82,6 +86,7 @@ func cors(origins []string, next http.Handler) http.Handler {
 		w.Header().Add("Vary", "Origin")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Idempotency-Key")
+		w.Header().Set("Access-Control-Expose-Headers", "X-Request-ID")
 		w.Header().Set("Access-Control-Max-Age", "600")
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
@@ -94,5 +99,5 @@ func cors(origins []string, next http.Handler) http.Handler {
 func writeAPIError(w http.ResponseWriter, status int, code string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(map[string]string{"error": code, "code": code})
+	_ = json.NewEncoder(w).Encode(map[string]string{"error": code, "code": code, "request_id": w.Header().Get("X-Request-ID")})
 }

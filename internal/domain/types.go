@@ -35,7 +35,16 @@ const (
 
 // Game.PlayerRole is fixed at creation. Authorization for application-wide
 // administration belongs to Account.SystemRole and is independent of it.
+type GameChronicle struct {
+	ID ID `json:"id"`
+	RoundID ID `json:"round_id"`
+	Title string `json:"title"`
+	Verdict string `json:"verdict"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 type Game struct {
+	LastChronicle          *GameChronicle `json:"last_chronicle,omitempty"`
 	ID                     ID         `json:"id"`
 	OwnerAccountID         ID         `json:"owner_account_id"`
 	Name                   string     `json:"name"`

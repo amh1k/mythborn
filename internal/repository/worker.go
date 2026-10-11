@@ -146,7 +146,7 @@ func (s *Store) loadSupporters(ctx context.Context, gameID, traditionID domain.I
 }
 
 func (s *Store) SetRoundStage(ctx context.Context, gameID, roundID domain.ID, status domain.RoundStatus, stage domain.RoundStage) error {
-	n, err := s.DB.Exec(ctx, `UPDATE rounds SET status=$3,stage=$4,started_at=CASE WHEN $3='running' THEN COALESCE(started_at,now()) ELSE started_at END,completed_at=CASE WHEN $3='complete' THEN now() WHEN $3 IN ('failed','abandoned','needs_attention') THEN completed_at ELSE NULL END,updated_at=now() WHERE game_id=$1 AND id=$2`, string(gameID), string(roundID), string(status), string(stage))
+	n, err := s.DB.Exec(ctx, `UPDATE rounds SET status=$3,stage=$4,started_at=CASE WHEN $3='running' THEN COALESCE(started_at,now()) ELSE started_at END,completed_at=CASE WHEN $3='complete' THEN now() WHEN $3 IN ('failed','abandoned','needs_attention') THEN completed_at ELSE NULL END,updated_at=now() WHERE game_id=$1 AND id=$2 AND status NOT IN ('complete','abandoned')`, string(gameID), string(roundID), string(status), string(stage))
 	if err != nil {
 		return err
 	}

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/amh1k/mythborn/internal/api"
 	"github.com/amh1k/mythborn/internal/app"
@@ -107,23 +108,31 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 
 func writeError(w http.ResponseWriter, err error) {
 	status, code := http.StatusInternalServerError, "internal_error"
-	message := ""
+	message := "The request could not be completed. Try again and quote the reference if it persists."
 	switch {
 	case errors.Is(err, repository.ErrMissingTemplates):
 		status, code = http.StatusConflict, "agent_templates_not_configured"
 		message = "An administrator must create and activate templates for the priest, scientist, soldier, and historian before you can create a civilization."
 	case errors.Is(err, app.ErrInvalid):
 		status, code = http.StatusUnprocessableEntity, "invalid_request"
+		message = "Check the supplied fields and try again."
+		if strings.Contains(err.Error(), "photo") {
+			message = strings.TrimPrefix(err.Error(), app.ErrInvalid.Error()+": ")
+		}
 	case errors.Is(err, app.ErrForbidden):
 		status, code = http.StatusForbidden, "forbidden"
+		message = "Your account or role does not have permission for this action."
 	case errors.Is(err, app.ErrConflict):
 		status, code = http.StatusConflict, "conflict"
+		message = "This action is unavailable in the current state. Open the current round or refresh and try again."
 	case errors.Is(err, repository.ErrNotFound):
 		status, code = http.StatusNotFound, "not_found"
+		message = "This record could not be found. Return to your civilization and refresh."
 	case errors.Is(err, repository.ErrStateConflict), errors.Is(err, repository.ErrDuplicateObservation):
 		status, code = http.StatusConflict, "conflict"
+		message = "Another round or update is in progress. Open it from Rounds before trying again."
 	}
-	payload := map[string]string{"error": code, "code": code}
+	payload := map[string]string{"error": code, "code": code, "request_id": w.Header().Get("X-Request-ID")}
 	if message != "" {
 		payload["message"] = message
 	}

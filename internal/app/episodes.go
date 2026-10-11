@@ -10,12 +10,33 @@ import (
 )
 
 type EpisodeDetail struct {
-	Episode     domain.Round      `json:"episode"`
-	Observation any               `json:"observation,omitempty"`
-	Chronicle   *domain.Chronicle `json:"chronicle,omitempty"`
+	Changes     []repository.SavedChange `json:"changes"`
+	Episode     domain.Round             `json:"episode"`
+	Observation any                      `json:"observation,omitempty"`
+	Chronicle   *domain.Chronicle        `json:"chronicle,omitempty"`
 }
 
 type Episodes struct{ Store *repository.Store }
+
+func (e Episodes) Abandon(ctx context.Context, p auth.Principal, roundID domain.ID, key string) (domain.ID, error) {
+	if len(key) < 8 || len(key) > 180 {
+		return "", ErrInvalid
+	}
+	round, err := e.Store.GetRound(ctx, roundID)
+	if err != nil {
+		return "", err
+	}
+	game, err := gameAccess(ctx, e.Store, p, round.GameID)
+	if err != nil {
+		return "", err
+	}
+	accountID := p.AccountID
+	if p.IsAdmin() {
+		accountID = game.OwnerAccountID
+	}
+	id, err := e.Store.RequestRoundAbandon(ctx, accountID, game.ID, round.ID, key)
+	return id, translateConflict(err)
+}
 
 func (e Episodes) List(ctx context.Context, p auth.Principal, gameID domain.ID) ([]domain.Round, error) {
 	if _, err := gameAccess(ctx, e.Store, p, gameID); err != nil {
@@ -43,6 +64,12 @@ func (e Episodes) Get(ctx context.Context, p auth.Principal, id domain.ID) (Epis
 	detail.Chronicle, err = e.Store.GetChronicle(ctx, id)
 	if err != nil {
 		return EpisodeDetail{}, err
+	}
+	if round.Status == domain.RoundStatusComplete {
+		detail.Changes, err = e.Store.ListRoundChanges(ctx, round.GameID, round.ID)
+		if err != nil {
+			return EpisodeDetail{}, err
+		}
 	}
 	return detail, nil
 }

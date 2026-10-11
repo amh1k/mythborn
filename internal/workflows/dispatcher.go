@@ -2,12 +2,14 @@ package workflows
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
 
 	"github.com/amh1k/mythborn/internal/domain"
 	"github.com/amh1k/mythborn/internal/workflow"
+	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/client"
 )
 
@@ -96,6 +98,16 @@ func (d *OutboxDispatcher) Dispatch(ctx context.Context, row domain.WorkflowComm
 		client.StartWorkflowOptions{ID: workflow.WorkflowID(cmd.GameID), TaskQueue: workflow.WorkflowTaskQueue},
 		workflow.CoordinatorWorkflowName, cmd.GameID, nil,
 	)
+	if err == nil && (cmd.Type == workflow.CommandDeleteGame || cmd.Type == workflow.CommandEndGame || cmd.Type == workflow.CommandAbandonRound) {
+		// The durable command remains queued; this separate signal releases the
+		// current call/timer so lifecycle work can reach the serialized handler.
+		err = d.Client.SignalWorkflow(ctx, workflow.WorkflowID(cmd.GameID), "", workflow.CoordinatorInterruptSignalName, cmd)
+		var finished *serviceerror.NotFound
+		if errors.As(err, &finished) {
+			// Delivery succeeded and the lifecycle command already finished.
+			err = nil
+		}
+	}
 	return err
 }
 

@@ -5,9 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"reflect"
 	"strings"
+	"time"
 
 	"google.golang.org/genai"
 )
@@ -20,12 +22,18 @@ const (
 )
 
 type Gemini struct {
-	client *genai.Client
-	model  string
-	slots  chan struct{}
+	client            *genai.Client
+	model             string
+	slots             chan struct{}
+	schedule          *scheduler
+	embeddingSchedule *scheduler
 }
 
 func NewGemini(ctx context.Context, apiKey string) (*Gemini, error) {
+	return NewGeminiWithBudget(ctx, apiKey, DefaultBudget())
+}
+
+func NewGeminiWithBudget(ctx context.Context, apiKey string, budget Budget) (*Gemini, error) {
 	if strings.TrimSpace(apiKey) == "" {
 		return nil, fmt.Errorf("GEMINI_API_KEY is required for the worker")
 	}
@@ -38,7 +46,15 @@ func NewGemini(ctx context.Context, apiKey string) (*Gemini, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Gemini{client: client, model: DefaultTextModel, slots: make(chan struct{}, 4)}, nil
+	schedule, err := sharedSchedule(apiKey+"/"+DefaultTextModel, budget.RequestsPerMinute, budget.InputTokensPerMinute, budget.WorkerCount)
+	if err != nil {
+		return nil, err
+	}
+	embeddingSchedule, err := sharedSchedule(apiKey+"/"+DefaultEmbeddingModel, budget.EmbeddingRequestsPerMinute, budget.EmbeddingInputTokensPerMinute, budget.WorkerCount)
+	if err != nil {
+		return nil, err
+	}
+	return &Gemini{client: client, model: DefaultTextModel, slots: make(chan struct{}, 4), schedule: schedule, embeddingSchedule: embeddingSchedule}, nil
 }
 
 func (g *Gemini) GenerateJSON(ctx context.Context, instruction string, image []byte, mimeType string, output any) error {
@@ -53,7 +69,7 @@ func (g *Gemini) GenerateJSON(ctx context.Context, instruction string, image []b
 		}
 		parts = append(parts, &genai.Part{InlineData: &genai.Blob{Data: image, MIMEType: mimeType}})
 	}
-	response, err := g.client.Models.GenerateContent(ctx, g.model, []*genai.Content{{Parts: parts}}, jsonConfig())
+	response, err := g.generate(ctx, parts)
 	if err != nil {
 		return err
 	}
@@ -68,7 +84,11 @@ func (g *Gemini) GenerateJSON(ctx context.Context, instruction string, image []b
 		}
 		value.Elem().Set(reflect.Zero(value.Elem().Type()))
 		repair := fmt.Sprintf("%s\nThe prior draft was not valid for the required JSON shape: %s. Repair it and return only valid JSON, no markdown. Draft: %s", instruction, err.Error(), text)
-		response, repairErr := g.client.Models.GenerateContent(ctx, g.model, []*genai.Content{{Parts: []*genai.Part{{Text: repair}}}}, jsonConfig())
+		repairParts := []*genai.Part{{Text: repair + "\nPreserve the original evidence and uncertainty. Restructure the draft; do not invent new observations."}}
+		if len(image) != 0 {
+			repairParts = append(repairParts, &genai.Part{InlineData: &genai.Blob{Data: image, MIMEType: mimeType}})
+		}
+		response, repairErr := g.generate(ctx, repairParts)
 		if repairErr != nil {
 			return repairErr
 		}
@@ -88,16 +108,24 @@ func jsonConfig() *genai.GenerateContentConfig {
 }
 
 func (g *Gemini) Embed(ctx context.Context, text string, query bool) ([]float32, error) {
+	started := time.Now()
 	if err := g.acquire(ctx); err != nil {
 		return nil, err
 	}
 	defer g.release()
+	estimate := (len([]rune(text)) + 2) / 3
+	waited, err := waitSchedule(ctx, g.embeddingSchedule, estimate)
+	if err != nil {
+		return nil, err
+	}
 	taskType := "RETRIEVAL_DOCUMENT"
 	if query {
 		taskType = "RETRIEVAL_QUERY"
 	}
 	dimensions := int32(EmbeddingDimensions)
 	response, err := g.client.Models.EmbedContent(ctx, DefaultEmbeddingModel, []*genai.Content{{Parts: []*genai.Part{{Text: text}}}}, &genai.EmbedContentConfig{TaskType: taskType, OutputDimensionality: &dimensions})
+	trace, _ := ctx.Value(traceKey{}).(Trace)
+	slog.InfoContext(ctx, "model_embedding", "game_id", trace.GameID, "round_id", trace.RoundID, "agent_id", trace.AgentID, "phase", trace.Phase, "model", DefaultEmbeddingModel, "estimated_input_tokens", estimate, "queue_wait_ms", waited.Milliseconds(), "duration_ms", time.Since(started).Milliseconds(), "success", err == nil)
 	if err != nil {
 		return nil, err
 	}

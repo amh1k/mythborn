@@ -11,6 +11,20 @@ import (
 	tw "go.temporal.io/sdk/workflow"
 )
 
+const maxQuotaAttempts = 8
+const maxQuotaWindow = 45 * time.Minute
+
+func quotaRetryDelay(ctx tw.Context, key string, attempt int, started time.Time, requested time.Duration) (time.Duration, error) {
+	if tw.GetVersion(ctx, fmt.Sprintf("quota-budget/%s/%d", key, attempt), tw.DefaultVersion, 1) == tw.DefaultVersion {
+		return requested, nil
+	}
+	delay := max(requested, min(5*time.Minute, time.Minute*time.Duration(1<<uint(min(attempt-1, 3)))))
+	if attempt >= maxQuotaAttempts || tw.Now(ctx).Add(delay).Sub(started) > maxQuotaWindow {
+		return 0, temporal.NewNonRetryableApplicationError("Provider quota remains exhausted. This round is paused; retry later or set it aside.", workflow.ModelQuotaExhaustedErrorType, nil)
+	}
+	return delay, nil
+}
+
 func rateLimitDelay(err error) (time.Duration, bool) {
 	var applicationError *temporal.ApplicationError
 	if !errors.As(err, &applicationError) || applicationError.Type() != workflow.ModelRateLimitErrorType {
@@ -49,11 +63,16 @@ func waitForModelRetry(ctx tw.Context, preview *workflow.DebatePreview, agentID 
 
 func modelActivity(ctx tw.Context, command workflow.Command, preview *workflow.DebatePreview, agentID domain.ID, phase, name string, input, output any) error {
 	version := tw.GetVersion(ctx, "model-rate-limit/"+string(command.EventID)+"/"+name, tw.DefaultVersion, 1)
+	started := tw.Now(ctx)
 	for attempt := 1; ; attempt++ {
 		err := tw.ExecuteActivity(ctx, name, input).Get(ctx, output)
 		delay, limited := rateLimitDelay(err)
 		if version == tw.DefaultVersion || !limited {
 			return err
+		}
+		delay, budgetErr := quotaRetryDelay(ctx, string(command.EventID)+"/"+name, attempt, started, delay)
+		if budgetErr != nil {
+			return budgetErr
 		}
 		if err := waitForModelRetry(ctx, preview, agentID, phase, attempt, delay); err != nil {
 			return err
@@ -67,12 +86,18 @@ func retryAgentFuture(ctx tw.Context, first tw.Future, request workflow.AgentReq
 	future, result := tw.NewFuture(ctx)
 	tw.Go(ctx, func(ctx tw.Context) {
 		pending := first
+		started := tw.Now(ctx)
 		for attempt := 1; ; attempt++ {
 			var output workflow.AgentResult
 			err := pending.Get(ctx, &output)
 			delay, limited := rateLimitDelay(err)
 			if !limited {
 				result.Set(output, err)
+				return
+			}
+			delay, budgetErr := quotaRetryDelay(ctx, childID, attempt, started, delay)
+			if budgetErr != nil {
+				result.Set(nil, budgetErr)
 				return
 			}
 			if err := waitForModelRetry(ctx, preview, request.Agent.Agent.ID, request.Phase, attempt, delay); err != nil {

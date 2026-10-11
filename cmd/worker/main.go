@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -52,7 +53,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	model, err := models.NewGemini(ctx, cfg.GeminiAPIKey)
+	model, err := models.NewGeminiWithBudget(ctx, cfg.GeminiAPIKey, models.Budget{RequestsPerMinute: cfg.ModelRPM, InputTokensPerMinute: cfg.ModelInputTPM, EmbeddingRequestsPerMinute: cfg.EmbeddingRPM, EmbeddingInputTokensPerMinute: cfg.EmbeddingInputTPM, WorkerCount: cfg.ModelWorkerCount})
 	if err != nil {
 		return err
 	}
@@ -60,6 +61,7 @@ func run() error {
 	clientOptions := client.Options{HostPort: cfg.TemporalAddress, Namespace: cfg.TemporalNamespace}
 	if cfg.TemporalAPIKey != "" {
 		clientOptions.Credentials = client.NewAPIKeyStaticCredentials(cfg.TemporalAPIKey)
+		clientOptions.ConnectionOptions.TLS = &tls.Config{MinVersion: tls.VersionTLS12}
 	}
 	temporalClient, err := client.Dial(clientOptions)
 	if err != nil {

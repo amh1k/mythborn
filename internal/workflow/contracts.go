@@ -16,16 +16,17 @@ type Dispatcher interface {
 
 // WorkflowNames centralizes the stable Temporal names used by dispatchers.
 const (
-	CoordinatorWorkflowName     = "mythborn.world.coordinator"
-	AgentWorkflowName           = "mythborn.world.agent"
-	AccountDeletionWorkflowName = "mythborn.account.deletion"
-	CoordinatorSignalName       = "mythborn.coordinator.command"
-	AccountDeletionSignalName   = "mythborn.account.deletion"
-	AgentRequestSignalName      = "mythborn.agent.request"
-	AgentResultSignalName       = "mythborn.agent.result"
-	DebatePreviewQueryName      = "mythborn.round.debate-preview"
-	WorkflowTaskQueue           = "mythborn-workers"
-	MessengerReplyTTL           = 24 * time.Hour
+	CoordinatorWorkflowName        = "mythborn.world.coordinator"
+	AgentWorkflowName              = "mythborn.world.agent"
+	AccountDeletionWorkflowName    = "mythborn.account.deletion"
+	CoordinatorSignalName          = "mythborn.coordinator.command"
+	CoordinatorInterruptSignalName = "mythborn.coordinator.interrupt"
+	AccountDeletionSignalName      = "mythborn.account.deletion"
+	AgentRequestSignalName         = "mythborn.agent.request"
+	AgentResultSignalName          = "mythborn.agent.result"
+	DebatePreviewQueryName         = "mythborn.round.debate-preview"
+	WorkflowTaskQueue              = "mythborn-workers"
+	MessengerReplyTTL              = 24 * time.Hour
 )
 
 // WorkflowID is stable across at-least-once outbox delivery. Each game has one
@@ -158,6 +159,7 @@ type DebatePreview struct {
 }
 
 const ModelRateLimitErrorType = "model_rate_limited"
+const ModelQuotaExhaustedErrorType = "model_quota_exhausted"
 
 // ModelRetry is transient progress. It is never included in a chronicle.
 type ModelRetry struct {

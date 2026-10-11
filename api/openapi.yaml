@@ -458,6 +458,39 @@ paths:
           $ref: '#/components/responses/InternalError'
         '503':
           $ref: '#/components/responses/AuthenticationUnavailable'
+  /episodes/{id}/abandon:
+    parameters:
+      - $ref: '#/components/parameters/EpisodeId'
+    post:
+      operationId: abandonEpisode
+      tags: [Observations]
+      summary: Set aside an unfinished round
+      description: >-
+        Owner or admin may cancel a queued, running, or paused discovery/council
+        in an active world. Cancels work before marking it abandoned. Does not
+        commit a chronicle or lore. Closing and completed rounds cannot be abandoned.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IdempotencyKeyQuery'
+      responses:
+        '202':
+          $ref: '#/components/responses/AcceptedCommand'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/InvalidRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/AuthenticationUnavailable'
   /episodes/{id}/retry:
     parameters:
       - $ref: '#/components/parameters/EpisodeId'
@@ -466,7 +499,7 @@ paths:
       tags: [Observations]
       summary: Retry a failed episode
       description: >-
-        Available only for failed or needs_attention episodes in an active world.
+        Available for failed or needs_attention episodes in an active world, or a closing round in an ending world.
         Reuses the episode and retries from its safe checkpoint. Requires an
         idempotency key through Idempotency-Key or idempotency_key query; header
         takes precedence.
@@ -1208,6 +1241,7 @@ components:
         - created_at
         - updated_at
       properties:
+        last_chronicle: {$ref: '#/components/schemas/Chronicle'}
         id:
           $ref: '#/components/schemas/UUID'
         owner_account_id:
@@ -1263,6 +1297,21 @@ components:
         episode: {$ref: '#/components/schemas/Round'}
         observation: {$ref: '#/components/schemas/EpisodeObservation'}
         chronicle: {$ref: '#/components/schemas/Chronicle'}
+        changes:
+          type: array
+          items: {$ref: '#/components/schemas/SavedChange'}
+    SavedChange:
+      type: object
+      required: [id, kind, name, after, after_state, reason]
+      properties:
+        id: {$ref: '#/components/schemas/UUID'}
+        kind: {type: string, enum: [belief, tradition]}
+        name: {type: string}
+        before: {type: string}
+        after: {type: string}
+        before_state: {type: string}
+        after_state: {type: string}
+        reason: {type: string}
     DebateDetail:
       type: object
       required: [state, player_role, preview]

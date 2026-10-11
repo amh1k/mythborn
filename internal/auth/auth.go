@@ -62,5 +62,9 @@ func Middleware(authenticator Authenticator, next http.Handler) http.Handler {
 func writeError(w http.ResponseWriter, status int, code string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(map[string]string{"error": code, "code": code})
+	message := "Sign in again to continue."
+	if status == http.StatusServiceUnavailable {
+		message = "Sign-in verification is temporarily unavailable. Try again shortly."
+	}
+	_ = json.NewEncoder(w).Encode(map[string]string{"error": code, "code": code, "message": message, "request_id": w.Header().Get("X-Request-ID")})
 }

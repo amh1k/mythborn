@@ -4,6 +4,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -18,6 +19,11 @@ type Config struct {
 	TemporalNamespace   string
 	TemporalAPIKey      string
 	GeminiAPIKey        string
+	ModelRPM            int
+	ModelInputTPM       int
+	ModelWorkerCount    int
+	EmbeddingRPM        int
+	EmbeddingInputTPM   int
 }
 
 // Load reads the environment without requiring deployment secrets during local
@@ -52,6 +58,17 @@ func LoadFrom(lookup func(string) (string, bool)) (Config, error) {
 	}
 	if cfg.HTTPAddress == "" {
 		return Config{}, fmt.Errorf("HTTP_ADDRESS must not be empty")
+	}
+	for _, setting := range []struct {
+		name     string
+		fallback int
+		target   *int
+	}{{"MODEL_RPM", 10, &cfg.ModelRPM}, {"MODEL_INPUT_TPM", 60000, &cfg.ModelInputTPM}, {"MODEL_WORKER_COUNT", 1, &cfg.ModelWorkerCount}, {"MODEL_EMBEDDING_RPM", 15, &cfg.EmbeddingRPM}, {"MODEL_EMBEDDING_INPUT_TPM", 100000, &cfg.EmbeddingInputTPM}} {
+		value, err := strconv.Atoi(valueOr(lookup, setting.name, strconv.Itoa(setting.fallback)))
+		if err != nil || value < 1 {
+			return Config{}, fmt.Errorf("%s must be a positive integer", setting.name)
+		}
+		*setting.target = value
 	}
 	return cfg, nil
 }

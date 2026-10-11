@@ -4,7 +4,10 @@ go 1.26.0
 
 require (
 	github.com/jackc/pgx/v5 v5.7.6
+	go.temporal.io/api v1.63.4
 	go.temporal.io/sdk v1.48.0
+	golang.org/x/image v0.47.0
+	golang.org/x/time v0.6.0
 	google.golang.org/genai v1.73.0
 )
 
@@ -34,13 +37,11 @@ require (
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/stretchr/testify v1.10.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.temporal.io/api v1.63.4 // indirect
 	golang.org/x/crypto v0.51.0 // indirect
 	golang.org/x/net v0.55.0 // indirect
-	golang.org/x/sync v0.20.0 // indirect
-	golang.org/x/sys v0.45.0 // indirect
-	golang.org/x/text v0.37.0 // indirect
-	golang.org/x/time v0.6.0 // indirect
+	golang.org/x/sync v0.24.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
+	golang.org/x/text v0.43.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260414002931-afd174a4e478 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260414002931-afd174a4e478 // indirect
 	google.golang.org/grpc v1.82.1 // indirect

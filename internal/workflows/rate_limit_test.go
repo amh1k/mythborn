@@ -98,9 +98,9 @@ func TestRoundResumesRateLimitedCallsWithoutRepeatingSuccessfulAgents(t *testing
 	}{
 		{10 * time.Second, "describing", 0, 1, "", time.Minute},
 		{70 * time.Second, "reaction", 3, 1, "priest", 2 * time.Minute},
-		{130 * time.Second, "reaction", 3, 2, "priest", 3 * time.Minute},
-		{190 * time.Second, "rebuttal", 7, 1, "priest", 4 * time.Minute},
-		{250 * time.Second, "writing", 8, 1, "historian", 330 * time.Second},
+		{130 * time.Second, "reaction", 3, 2, "priest", 4 * time.Minute},
+		{250 * time.Second, "rebuttal", 7, 1, "priest", 5 * time.Minute},
+		{310 * time.Second, "writing", 8, 1, "historian", 390 * time.Second},
 	} {
 		env.RegisterDelayedCallback(func() {
 			value, err := env.QueryWorkflow(workflow.DebatePreviewQueryName, domain.ID("round"))
@@ -144,7 +144,7 @@ func TestRoundResumesRateLimitedCallsWithoutRepeatingSuccessfulAgents(t *testing
 	if err := env.GetWorkflowError(); err != nil {
 		t.Fatal(err)
 	}
-	if env.Now().Sub(start) != 330*time.Second {
+	if env.Now().Sub(start) != 390*time.Second {
 		t.Fatalf("retry timers were skipped or duplicated: %v", env.Now().Sub(start))
 	}
 	for key, want := range map[string]int{"description": 2, "historian": 2, "commit": 1, "priest/reaction": 3, "priest/rebuttal": 2, "scientist/reaction": 1, "scientist/rebuttal": 1, "soldier/reaction": 1, "soldier/rebuttal": 1, "historian/reaction": 1, "historian/rebuttal": 1} {

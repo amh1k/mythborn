@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -53,6 +54,7 @@ func main() {
 		options := client.Options{HostPort: cfg.TemporalAddress, Namespace: cfg.TemporalNamespace}
 		if cfg.TemporalAPIKey != "" {
 			options.Credentials = client.NewAPIKeyStaticCredentials(cfg.TemporalAPIKey)
+			options.ConnectionOptions.TLS = &tls.Config{MinVersion: tls.VersionTLS12}
 		}
 		// Connect on the first preview request; a Temporal outage must not stop
 		// sign-in, durable episode reads, or other API operations.

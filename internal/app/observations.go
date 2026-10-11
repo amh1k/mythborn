@@ -37,10 +37,13 @@ func (o Observations) Create(ctx context.Context, p auth.Principal, gameID domai
 	if len(playerStatement) > 2000 {
 		return "", "", "", ErrInvalid
 	}
-	contentType := sniffImage(data, filename)
-	if contentType == "" {
-		return "", "", "", ErrInvalid
+	// Duplicate detection uses the original bytes; only processed pixels are stored.
+	sum := sha256.Sum256(data)
+	data, err = normalizePhotoWithContext(ctx, data)
+	if err != nil {
+		return "", "", "", err
 	}
+	contentType := "image/jpeg"
 	observationID, err := repository.NewID()
 	if err != nil {
 		return "", "", "", err
@@ -60,7 +63,6 @@ func (o Observations) Create(ctx context.Context, p auth.Principal, gameID domai
 	if err = o.Photos.Put(ctx, path, contentType, bytes.NewReader(data)); err != nil {
 		return "", "", "", err
 	}
-	sum := sha256.Sum256(data)
 	accountID := p.AccountID
 	if p.IsAdmin() {
 		accountID = game.OwnerAccountID

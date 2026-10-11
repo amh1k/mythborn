@@ -36,7 +36,18 @@ func (g Games) Create(ctx context.Context, p auth.Principal, name string, role d
 }
 
 func (g Games) List(ctx context.Context, p auth.Principal) ([]domain.Game, error) {
-	return g.Store.ListGames(ctx, p.AccountID)
+	games, err := g.Store.ListGames(ctx, p.AccountID)
+	if err != nil {
+		return nil, err
+	}
+	latest, err := g.Store.LatestChronicles(ctx, p.AccountID)
+	if err != nil {
+		return nil, err
+	}
+	for i := range games {
+		games[i].LastChronicle = latest[games[i].ID]
+	}
+	return games, nil
 }
 
 func (g Games) Get(ctx context.Context, p auth.Principal, id domain.ID) (domain.Game, error) {

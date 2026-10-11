@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 	"time"
@@ -27,6 +28,9 @@ const (
 	activityEnqueueCouncils    = "EnqueueCouncils"
 	activityDeleteGame         = "DeleteGame"
 	activityEnsureClosingRound = "EnsureClosingRound"
+	activityAbandonRound       = "AbandonRound"
+	activityAbandonOpenRounds  = "AbandonOpenRounds"
+	activityPauseRound         = "PauseRound"
 )
 
 type RoundLoader interface {
@@ -62,6 +66,23 @@ func Coordinator(ctx tw.Context, gameID domain.ID, carriedProgress map[domain.ID
 	if err := registerDebateQuery(ctx, progress); err != nil {
 		return err
 	}
+	var active workflow.Command
+	var cancelActive tw.CancelFunc
+	interrupts := tw.GetSignalChannel(ctx, workflow.CoordinatorInterruptSignalName)
+	// This listener only acts on the new interrupt signal. Old histories have
+	// none, so replay retains their original command ordering.
+	tw.Go(ctx, func(listener tw.Context) {
+		for listener.Err() == nil {
+			var interrupt workflow.Command
+			interrupts.Receive(listener, &interrupt)
+			if interrupt.GameID != gameID || cancelActive == nil {
+				continue
+			}
+			if interrupt.Type == workflow.CommandDeleteGame || (interrupt.Type == workflow.CommandEndGame && active.Type != workflow.CommandEndGame) || (interrupt.Type == workflow.CommandAbandonRound && interrupt.RoundID == active.RoundID && active.Type != workflow.CommandEndGame) {
+				cancelActive()
+			}
+		}
+	})
 	for {
 		terminate := false
 		selector := tw.NewSelector(ctx)
@@ -78,16 +99,33 @@ func Coordinator(ctx tw.Context, gameID domain.ID, carriedProgress map[domain.ID
 				logger.Error("ignored coordinator command for another game", "event_id", command.EventID)
 				return
 			}
-			if err := handleCommand(ctx, command, progress); err != nil {
+			commandCtx, cancel := tw.WithCancel(ctx)
+			active, cancelActive = command, cancel
+			err := handleCommand(commandCtx, command, progress)
+			cancelActive = nil
+			cancel()
+			if err != nil {
 				logger.Error("game command failed", "event_id", command.EventID, "command_type", command.Type, "error", err)
 				if command.RoundID != "" {
 					var current workflow.RoundContext
 					if err := tw.ExecuteActivity(ctx, activityLoadRound, gameID, command.RoundID).Get(ctx, &current); err == nil {
+						if current.Round.Status == domain.RoundStatusComplete || current.Round.Status == domain.RoundStatusAbandoned {
+							return
+						}
 						stage := current.Round.Stage
 						if stage == domain.RoundStageComplete {
 							stage = domain.RoundStageWriting
 						}
-						_ = tw.ExecuteActivity(ctx, activitySetStage, gameID, command.RoundID, domain.RoundStatusNeedsAttention, stage).Get(ctx, nil)
+						if tw.GetVersion(ctx, "pause-reason/"+string(command.EventID), tw.DefaultVersion, 1) == tw.DefaultVersion {
+							_ = tw.ExecuteActivity(ctx, activitySetStage, gameID, command.RoundID, domain.RoundStatusNeedsAttention, stage).Get(ctx, nil)
+						} else {
+							code := "processing_failed"
+							var appErr *temporal.ApplicationError
+							if errors.As(err, &appErr) && appErr.Type() == workflow.ModelQuotaExhaustedErrorType {
+								code = workflow.ModelQuotaExhaustedErrorType
+							}
+							_ = tw.ExecuteActivity(ctx, activityPauseRound, gameID, command.RoundID, code).Get(ctx, nil)
+						}
 					}
 				}
 			} else if command.Type == workflow.CommandDeleteGame || command.Type == workflow.CommandEndGame {
@@ -105,7 +143,8 @@ func Coordinator(ctx tw.Context, gameID domain.ID, carriedProgress map[domain.ID
 		if terminate {
 			return nil
 		}
-		if commandsSinceContinue >= 250 {
+		budgetVersion := tw.GetVersion(ctx, fmt.Sprintf("coordinator-history-budget/%d", commandsSinceContinue), tw.DefaultVersion, 1)
+		if (budgetVersion == tw.DefaultVersion && commandsSinceContinue >= 250) || (budgetVersion != tw.DefaultVersion && commands.Len() == 0 && interrupts.Len() == 0 && (commandsSinceContinue >= 25 || tw.GetInfo(ctx).GetCurrentHistoryLength() >= 2000 || tw.GetInfo(ctx).GetContinueAsNewSuggested())) {
 			return tw.NewContinueAsNewError(ctx, workflow.CoordinatorWorkflowName, gameID, progress)
 		}
 	}
@@ -167,7 +206,18 @@ func handleCommand(ctx tw.Context, command workflow.Command, progress map[domain
 		}
 		return err
 	case workflow.CommandEndGame:
-		return closeGame(ctx, command)
+		if tw.GetVersion(ctx, "end-abandons-open-round/"+string(command.EventID), tw.DefaultVersion, 1) != tw.DefaultVersion {
+			if err := tw.ExecuteActivity(ctx, activityAbandonOpenRounds, command.GameID).Get(ctx, nil); err != nil {
+				return err
+			}
+		}
+		return closeGame(ctx, command, progress)
+	case workflow.CommandAbandonRound:
+		if err := tw.ExecuteActivity(ctx, activityAbandonRound, command.GameID, command.RoundID, command.EventID).Get(ctx, nil); err != nil {
+			return err
+		}
+		delete(progress, command.RoundID)
+		return nil
 	case workflow.CommandDeleteGame:
 		return tw.ExecuteActivity(ctx, activityDeleteGame, struct {
 			GameID    domain.ID `json:"game_id"`
@@ -199,7 +249,11 @@ func processRound(ctx tw.Context, command workflow.Command, progressByRound map[
 		progress = &RoundProgress{}
 		progressByRound[command.RoundID] = progress
 	}
+	fingerprintVersion := tw.GetVersion(ctx, "checkpoint-evidence/"+string(command.EventID), tw.DefaultVersion, 1)
 	fingerprint := stateFingerprint(current)
+	if fingerprintVersion != tw.DefaultVersion {
+		fingerprint = evidenceFingerprint(current)
+	}
 	if progress.Fingerprint != "" && progress.Fingerprint != fingerprint {
 		*progress = RoundProgress{}
 	}
@@ -246,8 +300,11 @@ func processRound(ctx tw.Context, command workflow.Command, progressByRound map[
 	}
 	var err error
 	progress.Preview.Phase = "reaction"
-	if len(progress.Reactions) == 0 {
-		progress.Reactions, _, err = runAgentPhase(ctx, command, current, "reaction", nil, nil, progress.Preview)
+	if fingerprintVersion != tw.DefaultVersion {
+		progress.Fingerprint = evidenceFingerprint(current)
+	}
+	if len(progress.Reactions) < 4 {
+		progress.Reactions, _, err = runAgentPhase(ctx, command, current, "reaction", nil, nil, progress.Preview, progress)
 		if err != nil {
 			return err
 		}
@@ -261,9 +318,9 @@ func processRound(ctx tw.Context, command workflow.Command, progressByRound map[
 	if len(progress.Candidates) == 0 {
 		progress.Candidates = buildCandidates(current, progress.Reactions)
 	}
-	if len(progress.Rebuttals) == 0 {
+	if len(progress.Rebuttals) < 4 {
 		progress.Preview.Phase = "rebuttal"
-		_, progress.Rebuttals, err = runAgentPhase(ctx, command, current, "rebuttal", progress.Reactions, progress.Candidates, progress.Preview)
+		_, progress.Rebuttals, err = runAgentPhase(ctx, command, current, "rebuttal", progress.Reactions, progress.Candidates, progress.Preview, progress)
 		if err != nil {
 			return err
 		}
@@ -320,6 +377,15 @@ func stateFingerprint(round workflow.RoundContext) string {
 	return hex.EncodeToString(sum[:])
 }
 
+func evidenceFingerprint(round workflow.RoundContext) string {
+	data, _ := json.Marshal(struct {
+		Lore     string
+		Evidence *workflow.ObservationContext
+	}{stateFingerprint(round), round.Observation})
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:])
+}
+
 type activitiesDescriptionResult struct {
 	Description string `json:"description"`
 	Usable      bool   `json:"usable"`
@@ -354,7 +420,7 @@ func stageForDescription(status string) domain.RoundStage {
 	return domain.RoundStageAwaitingClarityChoice
 }
 
-func runAgentPhase(ctx tw.Context, command workflow.Command, current workflow.RoundContext, phase string, reactions []workflow.AgentReaction, candidates []workflow.TraditionIdea, preview *workflow.DebatePreview) ([]workflow.AgentReaction, []workflow.AgentRebuttal, error) {
+func runAgentPhase(ctx tw.Context, command workflow.Command, current workflow.RoundContext, phase string, reactions []workflow.AgentReaction, candidates []workflow.TraditionIdea, preview *workflow.DebatePreview, checkpoint ...*RoundProgress) ([]workflow.AgentReaction, []workflow.AgentRebuttal, error) {
 	type completed struct {
 		reaction *workflow.AgentReaction
 		rebuttal *workflow.AgentRebuttal
@@ -363,8 +429,33 @@ func runAgentPhase(ctx tw.Context, command workflow.Command, current workflow.Ro
 	// order without pinning all future discoveries in a long-lived game to it.
 	version := tw.GetVersion(ctx, "agent-phase-live-preview/"+string(command.EventID)+"/"+phase, tw.DefaultVersion, 1)
 	retryVersion := tw.GetVersion(ctx, "model-rate-limit-agents/"+string(command.EventID)+"/"+phase, tw.DefaultVersion, 1)
+	checkpointVersion := tw.GetVersion(ctx, "individual-checkpoints/"+string(command.EventID)+"/"+phase, tw.DefaultVersion, 1)
+	var saved *RoundProgress
+	if checkpointVersion != tw.DefaultVersion && len(checkpoint) > 0 {
+		saved = checkpoint[0]
+	}
+	results := make([]completed, 0, 4)
+	accepted := map[domain.ID]bool{}
+	if saved != nil {
+		if phase == "reaction" {
+			for i := range saved.Reactions {
+				r := saved.Reactions[i]
+				results = append(results, completed{reaction: &r})
+				accepted[r.AgentID] = true
+			}
+		} else {
+			for i := range saved.Rebuttals {
+				r := saved.Rebuttals[i]
+				results = append(results, completed{rebuttal: &r})
+				accepted[r.AgentID] = true
+			}
+		}
+	}
 	futures := make([]tw.Future, 0, len(current.Agents))
 	for _, agent := range current.Agents {
+		if accepted[agent.Agent.ID] {
+			continue
+		}
 		requestID := StableTraditionID(command.GameID, command.RoundID, string(command.EventID)+"/"+string(agent.Agent.ID)+"/"+phase)
 		request := workflow.AgentRequest{RequestID: requestID, GameID: command.GameID, Agent: agent, RoundID: command.RoundID, RoundKind: current.Round.Kind, Observation: current.Observation, Traditions: current.Traditions, Phase: phase, Reactions: reactions, Candidates: candidates}
 		childID := workflow.AgentWorkflowID(command.GameID, agent.Agent.ID) + "/round/" + string(command.RoundID) + "/event/" + string(command.EventID) + "/" + phase
@@ -375,7 +466,7 @@ func runAgentPhase(ctx tw.Context, command workflow.Command, current workflow.Ro
 		}
 		futures = append(futures, future)
 	}
-	results := make([]completed, 0, len(futures))
+	var phaseErr error
 	if version == tw.DefaultVersion {
 		// Keep the original wait order when replaying existing workflow history.
 		for _, future := range futures {
@@ -388,7 +479,6 @@ func runAgentPhase(ctx tw.Context, command workflow.Command, current workflow.Ro
 		}
 	} else {
 		selector := tw.NewSelector(ctx)
-		var phaseErr error
 		for _, future := range futures {
 			selector.AddFuture(future, func(ready tw.Future) {
 				var result workflow.AgentResult
@@ -399,13 +489,21 @@ func runAgentPhase(ctx tw.Context, command workflow.Command, current workflow.Ro
 					return
 				}
 				publishDebateResult(preview, result)
+				if saved != nil {
+					if result.Reaction != nil {
+						saved.Reactions = append(saved.Reactions, *result.Reaction)
+					}
+					if result.Rebuttal != nil {
+						saved.Rebuttals = append(saved.Rebuttals, *result.Rebuttal)
+					}
+				}
 				results = append(results, completed{reaction: result.Reaction, rebuttal: result.Rebuttal})
 			})
 		}
 		for range futures {
 			selector.Select(ctx)
 		}
-		if phaseErr != nil {
+		if phaseErr != nil && saved == nil {
 			return nil, nil, phaseErr
 		}
 	}
@@ -421,7 +519,7 @@ func runAgentPhase(ctx tw.Context, command workflow.Command, current workflow.Ro
 	}
 	sort.Slice(reactionsOut, func(i, j int) bool { return reactionsOut[i].AgentID < reactionsOut[j].AgentID })
 	sort.Slice(rebuttalsOut, func(i, j int) bool { return rebuttalsOut[i].AgentID < rebuttalsOut[j].AgentID })
-	return reactionsOut, rebuttalsOut, nil
+	return reactionsOut, rebuttalsOut, phaseErr
 }
 
 func buildCandidates(current workflow.RoundContext, reactions []workflow.AgentReaction) []workflow.TraditionIdea {
@@ -477,7 +575,7 @@ func finalizeClosing(ctx tw.Context, command workflow.Command, current workflow.
 	}{commit}).Get(ctx, nil)
 }
 
-func closeGame(ctx tw.Context, command workflow.Command) error {
+func closeGame(ctx tw.Context, command workflow.Command, progress map[domain.ID]*RoundProgress) error {
 	var roundID domain.ID
 	if err := tw.ExecuteActivity(ctx, activityEnsureClosingRound, struct {
 		GameID    domain.ID `json:"game_id"`
@@ -490,5 +588,17 @@ func closeGame(ctx tw.Context, command workflow.Command) error {
 	if err := tw.ExecuteActivity(ctx, activityLoadRound, command.GameID, command.RoundID).Get(ctx, &current); err != nil {
 		return err
 	}
-	return finalizeClosing(ctx, command, current, nil)
+	if tw.GetVersion(ctx, "closing-recovery/"+string(command.EventID), tw.DefaultVersion, 1) == tw.DefaultVersion {
+		return finalizeClosing(ctx, command, current, nil)
+	}
+	err := processRound(ctx, command, progress)
+	if err != nil && !temporal.IsCanceledError(err) {
+		code := "processing_failed"
+		var appErr *temporal.ApplicationError
+		if errors.As(err, &appErr) && appErr.Type() == workflow.ModelQuotaExhaustedErrorType {
+			code = workflow.ModelQuotaExhaustedErrorType
+		}
+		_ = tw.ExecuteActivity(ctx, activityPauseRound, command.GameID, command.RoundID, code).Get(ctx, nil)
+	}
+	return err
 }
